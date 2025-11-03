@@ -11,8 +11,7 @@ public class ADMIN {
     }
 
     public boolean login(String username, String password) {
-        if(username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty())
-            return false;
+        if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) return false;
         if (this.username.equals(username.trim()) && this.password.equals(password.trim())) {
             loggedIn = true;
             return true;

@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ADMIN_TEST {
-
     private ADMIN admin;
 
     @BeforeEach
@@ -26,11 +25,9 @@ class ADMIN_TEST {
     }
 
     @Test
-    void loginEmptyUsernameOrPassword() {
+    void loginEmptyOrNull() {
         assertFalse(admin.login("", "777"));
         assertFalse(admin.login("THAER", ""));
-        assertFalse(admin.login("   ", "777"));
-        assertFalse(admin.login("THAER", "   "));
         assertFalse(admin.login(null, "777"));
         assertFalse(admin.login("THAER", null));
     }

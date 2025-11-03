@@ -2,46 +2,46 @@ package library_system;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import static org.junit.jupiter.api.Assertions.*;
+import java.util.List;
+import java.util.ArrayList;
 
 class LIBRARY_TEST {
-
     private LIBRARY library;
-    private BOOK book;
 
     @BeforeEach
     void setup() {
+        STORAGE.ensureFiles();
+        STORAGE.writeDataLines(STORAGE.BOOKS_FILE, new ArrayList<>());
         library = new LIBRARY();
-        book = new BOOK("BOOK1", "THAER", "12345");
-        library.addBook(book);
+        library.addBook(new BOOK("BOOK1", "THAER", "111"));
+        library.addBook(new BOOK("BOOK2", "ALI", "222"));
+        library.addBook(new BOOK("BOOK3", "HAYA", "333"));
+        library.refresh();
     }
 
     @Test
-    void searchByTitle() {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(out));
-        library.searchBook("BOOK1");
-        assertTrue(out.toString().contains("BOOK1"));
-        System.setOut(System.out);
+    void addAndSearchBook() {
+        assertEquals(3, library.getBooks().size());
+        List<BOOK> found = library.search("BOOK1");
+        assertTrue(found.size() > 0);
+        assertEquals("111", found.get(0).getIsbn());
     }
 
     @Test
-    void searchByAuthor() {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(out));
-        library.searchBook("THAER");
-        assertTrue(out.toString().contains("THAER"));
-        System.setOut(System.out);
+    void preventDuplicateISBN() {
+        assertFalse(library.addBook(new BOOK("BOOK1_DUP", "THAER", "111")));
     }
 
     @Test
-    void searchNotFound() {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(out));
-        library.searchBook("UNKNOWN");
-        assertTrue(out.toString().contains("No matching books found"));
-        System.setOut(System.out);
+    void findBookByIsbn() {
+        BOOK b = library.findByIsbn("222");
+        assertNotNull(b);
+        assertEquals("BOOK2", b.getTitle());
+    }
+
+    @Test
+    void findByIsbnNotFound() {
+        assertNull(library.findByIsbn("999"));
     }
 }
