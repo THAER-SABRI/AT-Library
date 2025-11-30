@@ -1,0 +1,14 @@
+To: alimajdi2022@gmail.com | Message: You have 1 overdue book(s). Please return them.
+To: alimajdi2022@gmail.com | Message: 📚 Library Overdue Notice
+
+Dear user,
+
+You currently have *1 overdue book(s)*.
+Your outstanding fine at this moment is: **0.0 NIS**.
+
+Please return your books and settle your fine as soon as possible to avoid further penalties.
+
+If you already resolved this issue, kindly ignore this email.
+
+Best regards,
+AT Library System

@@ -1,0 +1,1 @@
+loanDays=28
