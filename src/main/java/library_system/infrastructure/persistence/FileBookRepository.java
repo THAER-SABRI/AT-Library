@@ -8,21 +8,30 @@ import library_system.application.BookRepository;
 import library_system.domain.Book;
 
 public class FileBookRepository implements BookRepository {
-    private static final String FILE = "DATA/BOOKS.TXT";
+    private final String filePath;
+
     private static final int W_ISBN = 12;
     private static final int W_TITLE = 22;
     private static final int W_AUTHOR = 20;
     private static final int W_STATUS = 10;
     private static final int W_USER = 12;
     private static final int W_DUE = 12;
+   
+    public FileBookRepository() {
+        this("DATA/BOOKS.TXT");
+    }
+    public FileBookRepository(String filePath) {
+        this.filePath = filePath;
+    }
 
     @Override
     public List<Book> getAll() {
         ensureParentDir();
         List<Book> list = new ArrayList<>();
-        if (!Files.exists(Paths.get(FILE))) return list;
+        Path path = Paths.get(filePath);
+        if (!Files.exists(path)) return list;
         try {
-            List<String> lines = Files.readAllLines(Paths.get(FILE));
+            List<String> lines = Files.readAllLines(path);
             for (String line : lines) {
                 if (line == null || line.trim().isEmpty()) continue;
                 if (line.startsWith("| ISBN")) continue;
@@ -61,7 +70,8 @@ public class FileBookRepository implements BookRepository {
             lines.add(row(b.getIsbn(), b.getTitle(), b.getAuthor(), status, user, due));
         }
         try {
-            Files.write(Paths.get(FILE), lines, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            Files.write(Paths.get(filePath), lines,
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException e) {
             System.out.println("Error saving books: " + e.getMessage());
         }
@@ -120,7 +130,7 @@ public class FileBookRepository implements BookRepository {
 
     private void ensureParentDir() {
         try {
-            Path p = Paths.get(FILE);
+            Path p = Paths.get(filePath);
             Path parent = p.getParent();
             if (parent != null && !Files.exists(parent)) {
                 Files.createDirectories(parent);

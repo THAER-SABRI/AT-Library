@@ -7,10 +7,20 @@ import java.util.*;
 import library_system.application.PaymentLedger;
 
 public class FilePaymentLedger implements PaymentLedger {
-    private static final String FILE = "DATA/PAYMENTS.TXT";
+
+    private final String file;
+
     private static final int W_USER = 12;
     private static final int W_AMT = 10;
     private static final int W_DATE = 12;
+
+    public FilePaymentLedger() {
+        this("DATA/PAYMENTS.TXT");
+    }
+
+    public FilePaymentLedger(String file) {
+        this.file = file;
+    }
 
     @Override
     public void recordPayment(String userId, double amount, LocalDate date) {
@@ -24,12 +34,10 @@ public class FilePaymentLedger implements PaymentLedger {
     public List<String> findAll() {
         ensureParentDir();
         List<String> lines = new ArrayList<>();
-        if (!Files.exists(Paths.get(FILE))) return lines;
+        if (!Files.exists(Paths.get(file))) return lines;
         try {
-            lines = Files.readAllLines(Paths.get(FILE));
-        } catch (IOException e) {
-            System.out.println("Error reading payments file: " + e.getMessage());
-        }
+            lines = Files.readAllLines(Paths.get(file));
+        } catch (IOException ignored) {}
         return lines;
     }
 
@@ -41,11 +49,9 @@ public class FilePaymentLedger implements PaymentLedger {
     public void deleteAll() {
         try {
             ensureParentDir();
-            Files.deleteIfExists(Paths.get(FILE));
+            Files.deleteIfExists(Paths.get(file));
             ensureHeader();
-        } catch (IOException e) {
-            System.out.println("Error deleting payments file.");
-        }
+        } catch (IOException ignored) {}
     }
 
     private String header() {
@@ -55,7 +61,7 @@ public class FilePaymentLedger implements PaymentLedger {
     private void ensureHeader() {
         try {
             ensureParentDir();
-            Path path = Paths.get(FILE);
+            Path path = Paths.get(file);
             if (!Files.exists(path) || Files.size(path) == 0) {
                 Files.write(path, Arrays.asList(header()), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             }
@@ -81,19 +87,17 @@ public class FilePaymentLedger implements PaymentLedger {
     private void append(String line) {
         try {
             ensureParentDir();
-            try (BufferedWriter w = Files.newBufferedWriter(Paths.get(FILE),
+            try (BufferedWriter w = Files.newBufferedWriter(Paths.get(file),
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
                 w.write(line);
                 w.newLine();
             }
-        } catch (IOException e) {
-            System.out.println("Error writing payments file.");
-        }
+        } catch (IOException ignored) {}
     }
 
     private void ensureParentDir() {
         try {
-            Path p = Paths.get(FILE);
+            Path p = Paths.get(file);
             Path parent = p.getParent();
             if (parent != null && !Files.exists(parent)) Files.createDirectories(parent);
         } catch (IOException ignored) {}

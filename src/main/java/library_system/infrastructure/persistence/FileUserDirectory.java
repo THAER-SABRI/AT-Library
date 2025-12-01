@@ -6,25 +6,28 @@ import java.util.*;
 import library_system.application.UserDirectory;
 
 public class FileUserDirectory implements UserDirectory {
-    private static final String FILE = "DATA/USERS.TXT";
-    private static final int W_ID = 12;
-    private static final int W_NAME = 22;
-    private static final int W_PHONE = 16;
-    private static final int W_EMAIL = 28;
+
+    private final String file;
+
+    public FileUserDirectory() {
+        this("DATA/USERS.TXT");
+    }
+
+    public FileUserDirectory(String file) {
+        this.file = file;
+    }
 
     @Override
     public List<String> getAllUsers() {
         ensureParentDir();
         List<String> users = new ArrayList<>();
-        if (!Files.exists(Paths.get(FILE))) {
+        if (!Files.exists(Paths.get(file))) {
             ensureHeader();
             return users;
         }
         try {
-            users = Files.readAllLines(Paths.get(FILE));
-        } catch (IOException e) {
-            System.out.println("Error reading users file: " + e.getMessage());
-        }
+            users = Files.readAllLines(Paths.get(file));
+        } catch (IOException ignored) {}
         return users;
     }
 
@@ -32,28 +35,19 @@ public class FileUserDirectory implements UserDirectory {
     public void addUser(String id, String name, String phone, String email) {
         if (id == null || id.trim().isEmpty()) return;
         ensureHeader();
-
-        // Prevent duplicate user IDs
         List<String> users = getAllUsers();
         for (String u : users) {
-            if (u.startsWith("| " + id + " ")) {
-                System.out.println("User with ID " + id + " already exists.");
-                return;
-            }
+            if (u.startsWith("| " + id + " ")) return;
         }
-
-        String line = row(id, safe(name), safe(phone), safe(email));
-        append(line);
+        append(row(id, safe(name), safe(phone), safe(email)));
     }
 
     public void deleteAll() {
         try {
             ensureParentDir();
-            Files.deleteIfExists(Paths.get(FILE));
+            Files.deleteIfExists(Paths.get(file));
             ensureHeader();
-        } catch (IOException e) {
-            System.out.println("Error deleting users file: " + e.getMessage());
-        }
+        } catch (IOException ignored) {}
     }
 
     public void reloadFromFile(List<String> targetList) {
@@ -62,34 +56,30 @@ public class FileUserDirectory implements UserDirectory {
     }
 
     private void append(String line) {
-        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(FILE),
+        try (BufferedWriter w = Files.newBufferedWriter(Paths.get(file),
                 StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
-            writer.write(line);
-            writer.newLine();
-        } catch (IOException e) {
-            System.out.println("Error writing to users file: " + e.getMessage());
-        }
+            w.write(line);
+            w.newLine();
+        } catch (IOException ignored) {}
     }
 
     private void ensureHeader() {
         try {
             ensureParentDir();
-            Path path = Paths.get(FILE);
+            Path path = Paths.get(file);
             if (!Files.exists(path) || Files.size(path) == 0) {
                 Files.write(path, Arrays.asList(row("ID", "NAME", "PHONE", "EMAIL")),
                         StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             }
-        } catch (IOException e) {
-            System.out.println("Error creating users header: " + e.getMessage());
-        }
+        } catch (IOException ignored) {}
     }
 
     private String row(String id, String name, String phone, String email) {
         return new StringBuilder()
-                .append("| ").append(pad(id, W_ID)).append(" | ")
-                .append(pad(name, W_NAME)).append(" | ")
-                .append(pad(phone, W_PHONE)).append(" | ")
-                .append(pad(email, W_EMAIL)).append(" |")
+                .append("| ").append(pad(id, 12)).append(" | ")
+                .append(pad(name, 22)).append(" | ")
+                .append(pad(phone, 16)).append(" | ")
+                .append(pad(email, 28)).append(" |")
                 .toString();
     }
 
@@ -107,10 +97,8 @@ public class FileUserDirectory implements UserDirectory {
 
     private void ensureParentDir() {
         try {
-            Path parent = Paths.get(FILE).getParent();
+            Path parent = Paths.get(file).getParent();
             if (parent != null && !Files.exists(parent)) Files.createDirectories(parent);
-        } catch (IOException e) {
-            System.out.println("Error ensuring directory: " + e.getMessage());
-        }
+        } catch (IOException ignored) {}
     }
 }

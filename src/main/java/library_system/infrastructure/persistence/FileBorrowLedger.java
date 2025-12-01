@@ -7,11 +7,23 @@ import java.util.*;
 import library_system.application.BorrowLedger;
 
 public class FileBorrowLedger implements BorrowLedger {
-    private static final String FILE = "DATA/BORROWS.TXT";
+
+    private final String filePath;
+
     private static final int W_TYPE = 8;
     private static final int W_ISBN = 12;
     private static final int W_USER = 12;
     private static final int W_DUE = 12;
+
+    public FileBorrowLedger() {
+        this("DATA/BORROWS.TXT");
+    }
+
+    // test constructor
+    public FileBorrowLedger(String filePath) {
+        this.filePath = filePath;
+    }
+
 
     @Override
     public void recordBorrow(String isbn, String userId, LocalDate dueDate) {
@@ -31,9 +43,9 @@ public class FileBorrowLedger implements BorrowLedger {
     public List<String> findAll() {
         ensureParentDir();
         List<String> lines = new ArrayList<>();
-        if (!Files.exists(Paths.get(FILE))) return lines;
+        if (!Files.exists(Paths.get(filePath))) return lines;
         try {
-            lines = Files.readAllLines(Paths.get(FILE));
+            lines = Files.readAllLines(Paths.get(filePath));
         } catch (IOException e) {
             System.out.println("Error reading borrow ledger: " + e.getMessage());
         }
@@ -48,7 +60,7 @@ public class FileBorrowLedger implements BorrowLedger {
     public void deleteAll() {
         try {
             ensureParentDir();
-            Files.deleteIfExists(Paths.get(FILE));
+            Files.deleteIfExists(Paths.get(filePath));
             ensureHeader();
         } catch (IOException e) {
             System.out.println("Error deleting borrow ledger file.");
@@ -62,7 +74,7 @@ public class FileBorrowLedger implements BorrowLedger {
     private void ensureHeader() {
         try {
             ensureParentDir();
-            Path path = Paths.get(FILE);
+            Path path = Paths.get(filePath);
             if (!Files.exists(path) || Files.size(path) == 0) {
                 Files.write(path, Arrays.asList(header()), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             }
@@ -89,7 +101,7 @@ public class FileBorrowLedger implements BorrowLedger {
     private void append(String line) {
         try {
             ensureParentDir();
-            try (BufferedWriter w = Files.newBufferedWriter(Paths.get(FILE),
+            try (BufferedWriter w = Files.newBufferedWriter(Paths.get(filePath),
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
                 w.write(line);
                 w.newLine();
@@ -101,7 +113,7 @@ public class FileBorrowLedger implements BorrowLedger {
 
     private void ensureParentDir() {
         try {
-            Path p = Paths.get(FILE);
+            Path p = Paths.get(filePath);
             Path parent = p.getParent();
             if (parent != null && !Files.exists(parent)) Files.createDirectories(parent);
         } catch (IOException ignored) {}

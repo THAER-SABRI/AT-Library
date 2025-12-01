@@ -6,8 +6,17 @@ import java.util.*;
 import library_system.application.SettingsGateway;
 
 public class FileSettingsGateway implements SettingsGateway {
-    private static final String SETTINGS_FILE = "DATA/SETTINGS.TXT";
+
+    private final String file;
     private int loanDays = 28;
+
+    public FileSettingsGateway() {
+        this("DATA/SETTINGS.TXT");
+    }
+
+    public FileSettingsGateway(String file) {
+        this.file = file;
+    }
 
     @Override
     public int getLoanDays() {
@@ -24,7 +33,7 @@ public class FileSettingsGateway implements SettingsGateway {
 
     private void load() {
         ensureParentDir();
-        Path path = Paths.get(SETTINGS_FILE);
+        Path path = Paths.get(file);
         if (!Files.exists(path)) {
             persist();
             return;
@@ -40,31 +49,23 @@ public class FileSettingsGateway implements SettingsGateway {
                     } catch (NumberFormatException ignored) {}
                 }
             }
-        } catch (IOException e) {
-            System.out.println("Error reading settings file: " + e.getMessage());
-        }
+        } catch (IOException ignored) {}
     }
 
     private void persist() {
         ensureParentDir();
-        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(SETTINGS_FILE),
+        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(file),
                 StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
             writer.write("loanDays=" + loanDays);
             writer.newLine();
-        } catch (IOException e) {
-            System.out.println("Error writing settings file: " + e.getMessage());
-        }
+        } catch (IOException ignored) {}
     }
 
     private void ensureParentDir() {
         try {
-            Path p = Paths.get(SETTINGS_FILE);
+            Path p = Paths.get(file);
             Path parent = p.getParent();
-            if (parent != null && !Files.exists(parent)) {
-                Files.createDirectories(parent);
-            }
-        } catch (IOException e) {
-            System.out.println("Error ensuring settings directory: " + e.getMessage());
-        }
+            if (parent != null && !Files.exists(parent)) Files.createDirectories(parent);
+        } catch (IOException ignored) {}
     }
 }
