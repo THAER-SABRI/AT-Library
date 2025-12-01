@@ -1,2 +1,0 @@
-| TYPE     | ISBN         | USER_ID      | DUE_DATE     |
-| BORROW   | 4            | 1            | 2025-11-28   |
