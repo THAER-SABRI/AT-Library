@@ -5,5 +5,6 @@ import java.util.List;
 
 public interface PaymentLedger {
     void recordPayment(String userId, double amount, LocalDate date);
+    double totalPaidForUser(String userId);
     List<String> findAll();
 }

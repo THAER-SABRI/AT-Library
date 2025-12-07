@@ -54,7 +54,7 @@ class EnvConfigLoaderTest {
     @Test
     void returnsEmptyPropertiesWhenFileMissing() {
 
-        Properties p = EnvConfigLoader.loadEnv("non_existent_file.env");
+        Properties p = EnvConfigLoader.loadEnv("email.env");
 
         // loader suppresses exceptions, so we just get an empty Properties
         assertTrue(p.isEmpty());

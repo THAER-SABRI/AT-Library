@@ -4,6 +4,7 @@ import library_system.application.SendReminders;
 import library_system.application.ComputeFine;
 import library_system.application.EmailService;
 import FakeImplementationForNeededInterfaces.FakeBookRepo;
+import FakeImplementationForNeededInterfaces.FakePaymentLedger;
 import org.junit.jupiter.api.*;
 import org.mockito.Mockito;
 
@@ -43,7 +44,8 @@ class SendRemindersTest {
         b.borrow("U1", LocalDate.now().minusDays(2));
         repo.books.add(b);
 
-        computeFine = new ComputeFine(repo);
+        FakePaymentLedger payment = new FakePaymentLedger();
+        computeFine = new ComputeFine(repo, payment);
 
         email = Mockito.mock(EmailService.class);
 
@@ -55,11 +57,13 @@ class SendRemindersTest {
         int count = service.sendAll(LocalDate.now());
 
         assertEquals(1, count);
+
         verify(email, times(1)).sendEmail(
                 eq("u1@mail.com"),
                 eq("Library Overdue Notice"),
                 anyString()
         );
+
         assertEquals(1, service.getSentLogs().size());
     }
 

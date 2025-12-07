@@ -1,2 +1,3 @@
-| ISBN         | TITLE                  | AUTHOR               | STATUS     | USER_ID      | DUE_DATE     |
-| 4            | Twilight               | Samer Samer          | BORROWED   | 1            | 2025-12-28   |
+| ISBN | TITLE | AUTHOR | STATUS | USER_ID | DUE_DATE |
+| 1 | Twilight | Ali | BORROWED | 1 | 2023-11-04 |
+| 2 | Harry Potter | Ali | FREE | null | null |

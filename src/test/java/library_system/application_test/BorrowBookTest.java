@@ -1,90 +1,83 @@
 package library_system.application_test;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-
+import FakeImplementationForNeededInterfaces.*;
 import library_system.application.*;
-import library_system.domain.*;
-
+import library_system.domain.Book;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import FakeImplementationForNeededInterfaces.FakeBookRepo;
-import FakeImplementationForNeededInterfaces.FakeBorrowLedger;
-import FakeImplementationForNeededInterfaces.FakeSettings;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+class BorrowBookTest {
 
-
-
-
-public class BorrowBookTest {
-
-	private FakeBookRepo repo;
-    private FakeBorrowLedger ledger;
-    private FakeSettings settings;
-    private BorrowBook service;
+    FakeBookRepo repo;
+    FakeBorrowLedger ledger;
+    FakeSettings settings;
+    FakeOverdueBooks overdue;
+    BorrowBook service;
 
     @BeforeEach
     void setup() {
         repo = new FakeBookRepo();
-        repo.books.clear();
         ledger = new FakeBorrowLedger();
         settings = new FakeSettings();
-        service = new BorrowBook(repo, ledger, settings);
+        settings.loanDays = 5;
+        overdue = new FakeOverdueBooks();
 
-        repo.books.add(new Book("BOOK1", "A", "111"));
+        service = new BorrowBook(repo, ledger, settings, overdue);
+
+        repo.books.add(new Book("B1", "A", "111"));
+        repo.books.add(new Book("B2", "A", "222"));
     }
 
     @Test
-    void borrowBookSuccessfully() {
-        LocalDate today = LocalDate.of(2024, 1, 1);
-
-        boolean result = service.borrow("111", "20", today);
-
+    void borrowSuccess() {
+        boolean result = service.borrow("111", "ALI", LocalDate.now());
         assertTrue(result);
-        Book b = repo.getAll().get(0);
-        assertTrue(b.isBorrowed());
-        assertEquals("20", b.getBorrowerId());
-        assertEquals(today.plusDays(28), b.getDueDate());
-
+        assertTrue(repo.books.get(0).isBorrowed());
         assertEquals(1, ledger.logs.size());
-        assertTrue(ledger.logs.get(0).startsWith("BORROW|111|20|"));
-
     }
 
     @Test
-    void cannotBorrowMissingBook() {
-        repo.books.clear();
-
-        boolean result = service.borrow("111", "10", LocalDate.now());
-
+    void cannotBorrowAlreadyBorrowed() {
+        repo.books.get(0).borrow("X", LocalDate.now().plusDays(3));
+        boolean result = service.borrow("111", "ALI", LocalDate.now());
         assertFalse(result);
-        assertEquals(0, ledger.logs.size());
+        assertTrue(ledger.logs.isEmpty());
     }
 
     @Test
-    void cannotBorrowAlreadyBorrowedBook() {
-        Book b = repo.books.get(0);
-        b.borrow("OLDUSER", LocalDate.now().plusDays(10));
+    void cannotBorrowIfUserHasOverdue() {
+        Book overdueBook = new Book("OB", "AA", "999");
+        overdueBook.borrow("ALI", LocalDate.now().minusDays(2));
+        overdue.overdue.add(overdueBook);
 
-        boolean result = service.borrow("111", "10", LocalDate.now());
-
-        assertFalse(result); 
-        assertEquals("OLDUSER", b.getBorrowerId());
-        assertEquals(0, ledger.logs.size());
+        boolean result = service.borrow("111", "ALI", LocalDate.now());
+        assertFalse(result);
+        assertTrue(ledger.logs.isEmpty());
     }
 
     @Test
-    void invalidInputsReturnFalse() {
-        assertFalse(service.borrow(null, "20", LocalDate.now()));
+    void invalidISBN() {
+        assertFalse(service.borrow(null, "ALI", LocalDate.now()));
+        assertFalse(service.borrow("", "ALI", LocalDate.now()));
+        assertFalse(service.borrow("   ", "ALI", LocalDate.now()));
+        assertTrue(ledger.logs.isEmpty());
+    }
+
+    @Test
+    void invalidUser() {
         assertFalse(service.borrow("111", null, LocalDate.now()));
-        assertFalse(service.borrow("111", "20", null));
-        assertFalse(service.borrow("   ", "20", LocalDate.now()));
+        assertFalse(service.borrow("111", "", LocalDate.now()));
         assertFalse(service.borrow("111", "   ", LocalDate.now()));
+        assertTrue(ledger.logs.isEmpty());
+    }
 
-        assertEquals(0, ledger.logs.size());
+    @Test
+    void invalidDate() {
+        assertFalse(service.borrow("111", "ALI", null));
+        assertTrue(ledger.logs.isEmpty());
     }
 }

@@ -6,10 +6,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import FakeImplementationForNeededInterfaces.FakeBookRepo;
+import FakeImplementationForNeededInterfaces.FakePaymentLedger;
 
 import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.*;
-
 
 class ComputeFineTest {
 
@@ -19,18 +19,16 @@ class ComputeFineTest {
     @BeforeEach
     void setup() {
         repo = new FakeBookRepo();
-        computeFine = new ComputeFine(repo);
+        computeFine = new ComputeFine(repo, new FakePaymentLedger());
     }
 
     @Test
     void overdueFineApplied() {
         Book b = new Book("BOOK1", "THAER", "111");
         b.borrow("ALI", LocalDate.now().minusDays(10)); 
-
         repo.books.add(b);
 
         double fine = computeFine.computeOutstanding("ALI", LocalDate.now());
-
         assertEquals(10 * 0.5, fine);
     }
 
@@ -38,22 +36,18 @@ class ComputeFineTest {
     void noFineIfNotOverdue() {
         Book b = new Book("BOOK2", "HAYA", "222");
         b.borrow("ALI", LocalDate.now().plusDays(10)); 
-
         repo.books.add(b);
 
         double fine = computeFine.computeOutstanding("ALI", LocalDate.now());
-
         assertEquals(0.0, fine);
     }
 
     @Test
     void fineIsZeroIfBookNotBorrowed() {
         Book b = new Book("BOOK3", "THAER", "333"); 
-
         repo.books.add(b);
 
         double fine = computeFine.computeOutstanding("ALI", LocalDate.now());
-
         assertEquals(0.0, fine);
     }
 
@@ -69,7 +63,6 @@ class ComputeFineTest {
         repo.books.add(b2);
 
         double fine = computeFine.computeOutstanding("ALI", LocalDate.now());
-
         assertEquals(15 * 0.5, fine);
     }
 
@@ -77,7 +70,6 @@ class ComputeFineTest {
     void fineIsZeroIfUserIdNullOrBlank() {
         Book b = new Book("BOOK1", "THAER", "111");
         b.borrow("ALI", LocalDate.now().minusDays(5));
-
         repo.books.add(b);
 
         assertEquals(0.0, computeFine.computeOutstanding(null, LocalDate.now()));
@@ -88,11 +80,8 @@ class ComputeFineTest {
     @Test
     void fineIsZeroIfDueDateNull() {
         Book b = new Book("BOOK9", "A", "999");
-
-        
         b.borrow("ALI", LocalDate.now().plusDays(5));
         b.returnBook();
-
         repo.books.add(b);
 
         double fine = computeFine.computeOutstanding("ALI", LocalDate.now());

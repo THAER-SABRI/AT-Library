@@ -1,6 +1,7 @@
 package library_system.application_test;
 
 import library_system.application.PayFine;
+import library_system.application.ComputeFine;
 import library_system.domain.Book;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,13 +17,15 @@ class PayFineTest {
 
     private FakePaymentLedger ledger;
     private FakeBookRepo repo;
+    private ComputeFine computeFine;
     private PayFine service;
 
     @BeforeEach
     void setup() {
         ledger = new FakePaymentLedger();
         repo = new FakeBookRepo();
-        service = new PayFine(ledger, repo);
+        computeFine = new ComputeFine(repo, ledger);
+        service = new PayFine(ledger, computeFine);
     }
 
     @Test

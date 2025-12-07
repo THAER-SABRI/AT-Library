@@ -1,6 +1,7 @@
 package library_system.infrastructure.persistence;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.nio.file.*;
 import java.time.LocalDate;
 import java.util.*;
@@ -11,7 +12,7 @@ public class FilePaymentLedger implements PaymentLedger {
     private final String file;
 
     private static final int W_USER = 12;
-    private static final int W_AMT = 10;
+    private static final int W_AMT  = 10;
     private static final int W_DATE = 12;
 
     public FilePaymentLedger() {
@@ -25,32 +26,45 @@ public class FilePaymentLedger implements PaymentLedger {
     @Override
     public void recordPayment(String userId, double amount, LocalDate date) {
         if (userId == null || userId.trim().isEmpty() || date == null) return;
-        ensureHeader();
-        String amt = String.format("%.2f", amount);
-        append(row(userId, amt, date.toString()));
+
+        ensureParentDir();
+        ensureHeaderExists();
+        append(row(userId.trim(), String.format("%.2f", amount), date.toString()));
+    }
+
+    @Override
+    public double totalPaidForUser(String userId) {
+        if (userId == null || userId.trim().isEmpty()) return 0.0;
+        double sum = 0.0;
+        for (String line : findAll()) {
+            String cleaned = line.replace("|", "").trim();
+            String[] parts = cleaned.split("\\s+");
+            if (parts.length < 3) continue;
+            if (!parts[0].equals(userId)) continue;
+            try {
+                sum += Double.parseDouble(parts[1]);
+            } catch (Exception ignored) {}
+        }
+        return sum;
     }
 
     @Override
     public List<String> findAll() {
         ensureParentDir();
-        List<String> lines = new ArrayList<>();
-        if (!Files.exists(Paths.get(file))) return lines;
+        Path p = Paths.get(file);
+        if (!Files.exists(p)) return new ArrayList<>();
         try {
-            lines = Files.readAllLines(Paths.get(file));
-        } catch (IOException ignored) {}
-        return lines;
-    }
-
-    public void reloadFromFile(List<String> targetList) {
-        targetList.clear();
-        targetList.addAll(findAll());
+            return Files.readAllLines(p);
+        } catch (IOException e) {
+            return new ArrayList<>();
+        }
     }
 
     public void deleteAll() {
+        ensureParentDir();
         try {
-            ensureParentDir();
             Files.deleteIfExists(Paths.get(file));
-            ensureHeader();
+            ensureHeaderExists();
         } catch (IOException ignored) {}
     }
 
@@ -58,22 +72,23 @@ public class FilePaymentLedger implements PaymentLedger {
         return row("USER_ID", "AMOUNT", "DATE");
     }
 
-    private void ensureHeader() {
+    private void ensureHeaderExists() {
         try {
-            ensureParentDir();
-            Path path = Paths.get(file);
-            if (!Files.exists(path) || Files.size(path) == 0) {
-                Files.write(path, Arrays.asList(header()), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            Path p = Paths.get(file);
+            if (!Files.exists(p) || Files.size(p) == 0) {
+                Files.write(p,
+                        Collections.singletonList(header()),
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING);
             }
         } catch (IOException ignored) {}
     }
 
     private String row(String user, String amount, String date) {
-        return new StringBuilder()
-                .append("| ").append(pad(user, W_USER)).append(" | ")
-                .append(pad(amount, W_AMT)).append(" | ")
-                .append(pad(date, W_DATE)).append(" |")
-                .toString();
+        return "| "
+                + pad(user, W_USER) + " | "
+                + pad(amount, W_AMT) + " | "
+                + pad(date, W_DATE) + " |";
     }
 
     private String pad(String s, int w) {
@@ -85,13 +100,11 @@ public class FilePaymentLedger implements PaymentLedger {
     }
 
     private void append(String line) {
-        try {
-            ensureParentDir();
-            try (BufferedWriter w = Files.newBufferedWriter(Paths.get(file),
-                    StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
-                w.write(line);
-                w.newLine();
-            }
+        try (BufferedWriter w = Files.newBufferedWriter(Paths.get(file),
+                StandardOpenOption.CREATE,
+                StandardOpenOption.APPEND)) {
+            w.write(line);
+            w.newLine();
         } catch (IOException ignored) {}
     }
 

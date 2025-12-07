@@ -42,6 +42,27 @@ public class FileUserDirectory implements UserDirectory {
         append(row(id, safe(name), safe(phone), safe(email)));
     }
 
+    @Override
+    public boolean removeUser(String id) {
+        if (id == null || id.trim().isEmpty()) return false;
+        ensureHeader();
+        List<String> users = getAllUsers();
+        List<String> updated = new ArrayList<>();
+        boolean removed = false;
+
+        for (String u : users) {
+            if (u.startsWith("| " + id + " ")) {
+                removed = true;
+            } else {
+                updated.add(u);
+            }
+        }
+
+        if (!removed) return false;
+        writeAll(updated);
+        return true;
+    }
+
     public void deleteAll() {
         try {
             ensureParentDir();
@@ -99,6 +120,14 @@ public class FileUserDirectory implements UserDirectory {
         try {
             Path parent = Paths.get(file).getParent();
             if (parent != null && !Files.exists(parent)) Files.createDirectories(parent);
+        } catch (IOException ignored) {}
+    }
+
+    private void writeAll(List<String> lines) {
+        try {
+            Files.write(Paths.get(file), lines,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException ignored) {}
     }
 }

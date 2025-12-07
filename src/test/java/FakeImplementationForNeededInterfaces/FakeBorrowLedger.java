@@ -1,11 +1,13 @@
 package FakeImplementationForNeededInterfaces;
 
 import library_system.application.BorrowLedger;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class FakeBorrowLedger implements BorrowLedger {
+
     public List<String> logs = new ArrayList<>();
 
     @Override
@@ -14,8 +16,8 @@ public class FakeBorrowLedger implements BorrowLedger {
     }
 
     @Override
-    public void recordReturn(String isbn) {
-        logs.add("RETURN|" + isbn);
+    public void recordReturn(String isbn, String userId) {
+        logs.add("RETURN|" + isbn + "|" + userId);
     }
 
     @Override

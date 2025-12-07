@@ -43,7 +43,7 @@ class FileBorrowLedgerTest {
 
     @Test
     void recordReturnWritesCorrectLine() throws Exception {
-        ledger.recordReturn("222");
+        ledger.recordReturn("222", "U1");
 
         List<String> lines = Files.readAllLines(ledgerFile);
         assertEquals(2, lines.size());
@@ -51,6 +51,7 @@ class FileBorrowLedgerTest {
         String entry = lines.get(1);
         assertTrue(entry.contains("RETURN"));
         assertTrue(entry.contains("222"));
+        assertTrue(entry.contains("U1"));
     }
 
     @Test
@@ -96,7 +97,8 @@ class FileBorrowLedgerTest {
         ledger.recordBorrow(null, "U1", LocalDate.now());
         ledger.recordBorrow("111", null, LocalDate.now());
         ledger.recordBorrow("111", "U1", null);
-        ledger.recordReturn(null);
+        ledger.recordReturn(null, "U1");
+        ledger.recordReturn("111", null);
 
         List<String> lines = ledger.findAll();
         assertEquals(0, lines.size());

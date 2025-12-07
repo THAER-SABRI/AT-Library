@@ -22,13 +22,15 @@ public class ConsoleApp {
     private static FileUserDirectory users = new FileUserDirectory();
     private static InMemoryEmailClient emailClient = new InMemoryEmailClient();
 
-    private static BorrowBook borrowBook = new BorrowBook(repo, borrowLedger, settings);
-    private static ReturnBook returnBook = new ReturnBook(repo, borrowLedger);
     private static OverdueBooks overdueBooks = new OverdueBooks(repo, borrowLedger);
-    private static ComputeFine computeFine = new ComputeFine(repo);
-    private static PayFine payFine = new PayFine(paymentLedger, repo);
+    private static BorrowBook borrowBook = new BorrowBook(repo, borrowLedger, settings, overdueBooks);
+    
+    private static ComputeFine computeFine = new ComputeFine(repo, paymentLedger);
+    private static ReturnBook returnBook = new ReturnBook(repo, borrowLedger, computeFine);
+    private static PayFine payFine = new PayFine(paymentLedger, computeFine);
     private static SendReminders sendReminders;
     private static Admin admin = new Admin("THAER", "777");
+    private static UnregisterUser unregisterUser = new UnregisterUser(users, repo, computeFine,admin);
 
     private static String nowStr() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
@@ -58,7 +60,8 @@ public class ConsoleApp {
         System.out.printf("║ %-10s │ %-20s │ %-15s │ %-20s ║%n", "USER ID", "NAME", "PHONE", "EMAIL");
         System.out.println("╠════════════════════════════════════════════════════════════════════════════╣");
         for (String line : usersList) {
-            if (line.trim().isEmpty() || line.toUpperCase().contains("ID") && line.toUpperCase().contains("NAME")) continue;
+            if (line.trim().isEmpty() || line.toUpperCase().contains("ID") && line.toUpperCase().contains("NAME"))
+                continue;
             String cleaned = line.replace("|", "").trim();
             String[] parts = cleaned.split("\\s{2,}");
             String id = parts.length > 0 ? parts[0].trim() : "";
@@ -71,23 +74,18 @@ public class ConsoleApp {
     }
 
     public static void main(String[] args) {
-    	
-    	
+
         java.io.File dataDir = new java.io.File("DATA");
-        if (!dataDir.exists()) dataDir.mkdirs();
-        
+        if (!dataDir.exists())
+            dataDir.mkdirs();
+
         Properties env = EnvConfigLoader.loadEnv("DATA/email.env");
 
-        EmailService emailService = new SMTPEmailService(
-            env.getProperty("EMAIL_USERNAME"),
-            env.getProperty("EMAIL_PASSWORD"),
-            env.getProperty("EMAIL_HOST"),
-            Integer.parseInt(env.getProperty("EMAIL_PORT")),
-            Boolean.parseBoolean(env.getProperty("EMAIL_TLS"))
-        );
+        EmailService emailService = new SMTPEmailService(env.getProperty("EMAIL_USERNAME"),
+                env.getProperty("EMAIL_PASSWORD"), env.getProperty("EMAIL_HOST"),
+                Integer.parseInt(env.getProperty("EMAIL_PORT")), Boolean.parseBoolean(env.getProperty("EMAIL_TLS")));
 
-        sendReminders = new SendReminders(emailService,computeFine);
-
+        sendReminders = new SendReminders(emailService, computeFine);
 
         while (true) {
             System.out.println();
@@ -104,244 +102,371 @@ public class ConsoleApp {
             System.out.println("║ 8. Show Outstanding Fine                                           ║");
             System.out.println("║ 9. Pay Fine                                                        ║");
             System.out.println("║ 10. Set Loan Days                                                  ║");
-            System.out.println("║ 11. Create User                                                    ║");
-            System.out.println("║ 12. List Users                                                     ║");
-            System.out.println("║ 13. Export Reports                                                 ║");
-            System.out.println("║ 14. Reset Data Files                                               ║");
-            System.out.println("║ 15. List All Books                                                 ║");
-            System.out.println("║ 16. Send Reminders                                                 ║");
-            System.out.println("║ 17. Exit                                                           ║");
+            System.out.println("║ 11. Register User                                                  ║");
+            System.out.println("║ 12. Unregister User                                                ║");
+            System.out.println("║ 13. List Users                                                     ║");
+            System.out.println("║ 14. Export Reports                                                 ║");
+            System.out.println("║ 15. Reset Data Files                                               ║");
+            System.out.println("║ 16. List All Books                                                 ║");
+            System.out.println("║ 17. Send Reminders                                                 ║");
+            System.out.println("║ 18. Exit                                                           ║");
             System.out.println("╚════════════════════════════════════════════════════════════════════╝");
-            System.out.print(" Enter option [1-17]: ");
+            System.out.print(" Enter option [1-18]: ");
 
             int opt = 0;
-            try { opt = Integer.parseInt(scanner.nextLine().trim()); } catch (Exception e) { System.out.println("\nInvalid input."); continue; }
+            try {
+                opt = Integer.parseInt(scanner.nextLine().trim());
+            } catch (Exception e) {
+                System.out.println("\nInvalid input.");
+                continue;
+            }
 
             switch (opt) {
-                case 1:
-                    System.out.print("\nUsername: ");
-                    String u = scanner.nextLine();
-                    System.out.print("Password: ");
-                    String p = scanner.nextLine();
-                    if (!admin.login(u, p)) {
-                        System.out.println("\nWrong credentials. Press T to try again or E to exit.");
-                        String resp = scanner.nextLine().trim().toUpperCase();
-                        if (resp.equals("T")) continue;
-                        else if (!continueOrExit()) return;
-                        break;
-                    } else {
-                        System.out.println("\nAdmin login successful.");
-                    }
-                    if (!continueOrExit()) return;
+            case 1:
+                System.out.print("\nUsername: ");
+                String u = scanner.nextLine();
+                System.out.print("Password: ");
+                String p = scanner.nextLine();
+                if (!admin.login(u, p)) {
+                    System.out.println("\nWrong credentials. Press T to try again or E to exit.");
+                    String resp = scanner.nextLine().trim().toUpperCase();
+                    if (resp.equals("T"))
+                        continue;
+                    else if (!continueOrExit())
+                        return;
                     break;
-                case 2:
-                    admin.logout();
-                    System.out.println("\nAdmin logged out.");
-                    if (!continueOrExit()) return;
+                } else {
+                    System.out.println("\nAdmin login successful.");
+                }
+                if (!continueOrExit())
+                    return;
+                break;
+            case 2:
+                admin.logout();
+                System.out.println("\nAdmin logged out.");
+                if (!continueOrExit())
+                    return;
+                break;
+            case 3:
+                if (!admin.isLoggedIn()) {
+                    System.out.println("\nAdmin must login first.");
+                    if (!continueOrExit())
+                        return;
                     break;
-                case 3:
-                    if (!admin.isLoggedIn()) { System.out.println("\nAdmin must login first."); if (!continueOrExit()) return; break; }
-                    System.out.print("\nTitle: ");
-                    String t = scanner.nextLine();
-                    System.out.print("Author: ");
-                    String a = scanner.nextLine();
-                    System.out.print("ISBN: ");
-                    String i = scanner.nextLine();
-                    if (!isDigits(i)) { System.out.println("\nInvalid ISBN."); if (!continueOrExit()) return; break; }
-                    List<Book> books = repo.getAll();
-                    for (Book b : books) if (b.getIsbn().equals(i)) { System.out.println("\nDuplicate ISBN."); i = null; break; }
-                    if (i == null) { if (!continueOrExit()) return; break; }
-                    books.add(new Book(t, a, i));
-                    repo.saveAll(books);
-                    System.out.println("\nBook added successfully.");
-                    if (!continueOrExit()) return;
+                }
+                System.out.print("\nTitle: ");
+                String t = scanner.nextLine();
+                System.out.print("Author: ");
+                String a = scanner.nextLine();
+                System.out.print("ISBN: ");
+                String i = scanner.nextLine();
+                if (!isDigits(i)) {
+                    System.out.println("\nInvalid ISBN.");
+                    if (!continueOrExit())
+                        return;
                     break;
-                case 4:
-                    System.out.print("\nSearch keyword: ");
-                    String k = scanner.nextLine().trim().toLowerCase();
-                    List<Book> all = repo.getAll();
-                    List<Book> result = new ArrayList<Book>();
-                    for (Book b : all) {
-                        if (b.getTitle().toLowerCase().contains(k) || b.getAuthor().toLowerCase().contains(k) || b.getIsbn().contains(k))
-                            result.add(b);
-                    }
-                    if (result.isEmpty()) System.out.println("\nNo matching books found.");
-                    else printBooksTable(result, "SEARCH RESULTS");
-                    if (!continueOrExit()) return;
-                    break;
-                case 5:
-                    System.out.println("\nBorrow Book ");
-                    System.out.println(" 1. Select User");
-                    System.out.println(" 2. Create New User");
-                    System.out.print(" Choose option [1-2]: ");
-                    int userOpt = 0;
-                    try { userOpt = Integer.parseInt(scanner.nextLine().trim()); } catch (Exception e) {}
-                    String uid = null;
-                    if (userOpt == 1) {
-                        List<String> allUsersList = users.getAllUsers();
-                        if (allUsersList.isEmpty()) {
-                            System.out.println("\nNo users found. Please create a new user first.");
-                            if (!continueOrExit()) return;
-                            break;
-                        }
-                        printUsersTable(allUsersList, "EXISTING USERS");
-                        System.out.print("\nEnter existing User ID: ");
-                        uid = scanner.nextLine().trim();
-                    } else if (userOpt == 2) {
-                        System.out.print("\nNew User ID: ");
-                        uid = scanner.nextLine().trim();
-                        System.out.print("Name: ");
-                        String nn = scanner.nextLine().trim();
-                        System.out.print("Phone: ");
-                        String np = scanner.nextLine().trim();
-                        System.out.print("Email: ");
-                        String ne = scanner.nextLine().trim();
-                        users.addUser(uid, nn, np, ne);
-                        System.out.println("\nUser created successfully.");
-                    } else {
-                        System.out.println("\nInvalid option.");
-                        if (!continueOrExit()) return;
+                }
+                List<Book> books = repo.getAll();
+                for (Book b : books)
+                    if (b.getIsbn().equals(i)) {
+                        System.out.println("\nDuplicate ISBN.");
+                        i = null;
                         break;
                     }
-                    System.out.print("\nEnter Book ISBN: ");
-                    String bi = scanner.nextLine().trim();
-                    if (!isDigits(bi)) { System.out.println("\nInvalid ISBN."); if (!continueOrExit()) return; break; }
-                    List<Book> bookList = repo.getAll();
-                    Book targetBook = null;
-                    for (Book b : bookList) {
-                        if (b.getIsbn().equals(bi)) { targetBook = b; break; }
+                if (i == null) {
+                    if (!continueOrExit())
+                        return;
+                    break;
+                }
+                books.add(new Book(t, a, i));
+                repo.saveAll(books);
+                System.out.println("\nBook added successfully.");
+                if (!continueOrExit())
+                    return;
+                break;
+            case 4:
+                System.out.print("\nSearch keyword: ");
+                String k = scanner.nextLine().trim().toLowerCase();
+                List<Book> all = repo.getAll();
+                List<Book> result = new ArrayList<Book>();
+                for (Book b : all) {
+                    if (b.getTitle().toLowerCase().contains(k) || b.getAuthor().toLowerCase().contains(k)
+                            || b.getIsbn().contains(k))
+                        result.add(b);
+                }
+                if (result.isEmpty())
+                    System.out.println("\nNo matching books found.");
+                else
+                    printBooksTable(result, "SEARCH RESULTS");
+                if (!continueOrExit())
+                    return;
+                break;
+            case 5:
+                System.out.println("\nBorrow Book ");
+                System.out.println(" 1. Select User");
+                System.out.println(" 2. Create New User");
+                System.out.print(" Choose option [1-2]: ");
+                int userOpt = 0;
+                try {
+                    userOpt = Integer.parseInt(scanner.nextLine().trim());
+                } catch (Exception e) {
+                }
+                String uid = null;
+                if (userOpt == 1) {
+                    List<String> allUsersList = users.getAllUsers();
+                    if (allUsersList.isEmpty()) {
+                        System.out.println("\nNo users found. Please create a new user first.");
+                        if (!continueOrExit())
+                            return;
+                        break;
                     }
-                    if (targetBook == null) { System.out.println("\nBook not found."); if (!continueOrExit()) return; break; }
-                    System.out.println("\nBook Details:");
-                    System.out.println(" Title: " + targetBook.getTitle());
-                    System.out.println(" Author: " + targetBook.getAuthor());
-                    System.out.println(" ISBN: " + targetBook.getIsbn());
-                    System.out.print(" Confirm borrow (Y/N): ");
-                    String conf = scanner.nextLine().trim().toUpperCase();
-                    if (!conf.equals("Y")) { System.out.println("\nBorrow cancelled."); if (!continueOrExit()) return; break; }
-                    boolean borrowed = borrowBook.borrow(bi, uid, LocalDate.now());
-                    System.out.println(borrowed ? "\nBorrowed successfully." : "\nCannot borrow this book.");
-                    if (!continueOrExit()) return;
-                    break;
-                case 6:
-                    System.out.print("\nISBN to return: ");
-                    String ri = scanner.nextLine();
-                    if (!isDigits(ri)) { System.out.println("\nInvalid ISBN."); if (!continueOrExit()) return; break; }
-                    boolean rb = returnBook.returnBook(ri);
-                    System.out.println(rb ? "\nReturned successfully." : "\nCannot return.");
-                    if (!continueOrExit()) return;
-                    break;
-                case 7:
-                    refresh();
-                    List<Book> over = overdueBooks.getOverdueBooks(LocalDate.now());
-                    if (over.isEmpty()) {
-                        System.out.println("\nNo overdue books.");
-                    } else {
-                        printBooksTable(over, "OVERDUE BOOKS");
-                        Path path = Paths.get("DATA/OVERDUE.TXT");
-                        List<String> lines = new ArrayList<>();
-                        lines.add("| TYPE     | ISBN         | USER_ID      | DUE_DATE     |");
-                        for (Book b : over) {
-                            lines.add(String.format("| %-8s | %-12s | %-12s | %-12s |",
-                                    "BORROW", b.getIsbn(), b.getBorrowerId(), b.getDueDate()));
-                        }
-                        try {
-                            Files.write(path, lines, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-                            System.out.println("\nOverdue file updated: " + path.toAbsolutePath());
-                        } catch (Exception e) {
-                            System.out.println("\nError writing overdue file: " + e.getMessage());
-                        }
-                    }
-                    if (!continueOrExit()) return;
-                    break;
-                case 8:
-                    System.out.print("\nUser ID: ");
-                    String su = scanner.nextLine().trim();
-                    if (!isDigits(su)) { System.out.println("\nInvalid user id."); if (!continueOrExit()) return; break; }
-                    double fine = computeFine.computeOutstanding(su, LocalDate.now());
-                    System.out.println("\nOutstanding fine: " + fine);
-                    if (!continueOrExit()) return;
-                    break;
-                case 9:
-                    System.out.print("\nUser ID: ");
-                    String pu = scanner.nextLine().trim();
-                    System.out.print("Amount: ");
-                    double amt = 0;
-                    try { amt = Double.parseDouble(scanner.nextLine().trim()); } catch (Exception e) {}
-                    double remain = payFine.pay(pu, amt, LocalDate.now());
-                    System.out.println("\nRemaining fine: " + remain);
-                    if (!continueOrExit()) return;
-                    break;
-                case 10:
-                    System.out.print("\nNew loan days: ");
-                    int d = 28;
-                    try { d = Integer.parseInt(scanner.nextLine().trim()); } catch (Exception e) {}
-                    settings.setLoanDays(d);
-                    System.out.println("\nLoan days set to " + d + ".");
-                    if (!continueOrExit()) return;
-                    break;
-                case 11:
-                    System.out.print("\nUser ID: ");
-                    String nid = scanner.nextLine().trim();
+                    printUsersTable(allUsersList, "EXISTING USERS");
+                    System.out.print("\nEnter existing User ID: ");
+                    uid = scanner.nextLine().trim();
+                } else if (userOpt == 2) {
+                    System.out.print("\nNew User ID: ");
+                    uid = scanner.nextLine().trim();
                     System.out.print("Name: ");
                     String nn = scanner.nextLine().trim();
                     System.out.print("Phone: ");
                     String np = scanner.nextLine().trim();
                     System.out.print("Email: ");
                     String ne = scanner.nextLine().trim();
-                    users.addUser(nid, nn, np, ne);
-                    System.out.println("\nUser created.");
-                    if (!continueOrExit()) return;
+                    users.addUser(uid, nn, np, ne);
+                    System.out.println("\nUser created successfully.");
+                } else {
+                    System.out.println("\nInvalid option.");
+                    if (!continueOrExit())
+                        return;
                     break;
-                case 12:
-                    List<String> allUsers = users.getAllUsers();
-                    if (allUsers.isEmpty()) System.out.println("\nNo users found.");
-                    else printUsersTable(allUsers, "ALL USERS");
-                    if (!continueOrExit()) return;
+                }
+                System.out.print("\nEnter Book ISBN: ");
+                String bi = scanner.nextLine().trim();
+                if (!isDigits(bi)) {
+                    System.out.println("\nInvalid ISBN.");
+                    if (!continueOrExit())
+                        return;
                     break;
-                case 13:
-                    List<String> report = new ArrayList<String>();
-                    report.add("LIBRARY REPORT " + nowStr());
-                    report.add("Books: " + repo.getAll().size());
-                    report.add("Users: " + users.getAllUsers().size());
-                    Path rp = Paths.get("DATA/REPORTS.TXT");
-                    try { Files.write(rp, report); } catch (Exception e) {}
-                    System.out.println("\nReports written to: " + rp.toAbsolutePath());
-                    if (!continueOrExit()) return;
-                    break;
-                case 14:
-                    try {
-                        Files.deleteIfExists(Paths.get("DATA/BOOKS.TXT"));
-                        Files.deleteIfExists(Paths.get("DATA/BORROWS.TXT"));
-                        Files.deleteIfExists(Paths.get("DATA/PAYMENTS.TXT"));
-                        Files.deleteIfExists(Paths.get("DATA/USERS.TXT"));
-                        Files.deleteIfExists(Paths.get("DATA/SETTINGS.TXT"));
-                        Files.deleteIfExists(Paths.get("DATA/REPORTS.TXT"));
-                        Files.deleteIfExists(Paths.get("DATA/OVERDUE.TXT"));
-                    } catch (Exception e) {}
-                    System.out.println("\nAll data files reset.");
-                    if (!continueOrExit()) return;
-                    break;
-                case 15:
-                    printBooksTable(repo.getAll(), "ALL BOOKS");
-                    if (!continueOrExit()) return;
-                    break;
-                case 16:
-                	
-                    int sent = sendReminders.sendAll(LocalDate.now());
-                    if (sent == 0) System.out.println("\nNo overdue users. No reminders sent.");
-                    else {
-                        for (String msg : sendReminders.getSentLogs()) System.out.println(msg);
-                        System.out.println("\n" + sent + " reminders sent successfully.");
+                }
+                List<Book> bookList = repo.getAll();
+                Book targetBook = null;
+                for (Book b : bookList) {
+                    if (b.getIsbn().equals(bi)) {
+                        targetBook = b;
+                        break;
                     }
+                }
+                if (targetBook == null) {
+                    System.out.println("\nBook not found.");
+                    if (!continueOrExit())
+                        return;
+                    break;
+                }
+                System.out.println("\nBook Details:");
+                System.out.println(" Title: " + targetBook.getTitle());
+                System.out.println(" Author: " + targetBook.getAuthor());
+                System.out.println(" ISBN: " + targetBook.getIsbn());
+                System.out.print(" Confirm borrow (Y/N): ");
+                String conf = scanner.nextLine().trim().toUpperCase();
+                if (!conf.equals("Y")) {
+                    System.out.println("\nBorrow cancelled.");
+                    if (!continueOrExit())
+                        return;
+                    break;
+                }
+                boolean borrowed = borrowBook.borrow(bi, uid, LocalDate.now());
+                System.out.println(borrowed ? "\nBorrowed successfully." : "\nCannot borrow this book.");
+                if (!continueOrExit())
+                    return;
+                break;
+            case 6:
+                if (!admin.isLoggedIn()) {
+                    System.out.println("\nAdmin must login first.");
                     if (!continueOrExit()) return;
                     break;
-                case 17:
-                    System.out.println("\nExiting Library App. Goodbye!");
+                }
+
+                System.out.print("\nUser ID: ");
+                String userid = scanner.nextLine().trim();
+
+                System.out.print("\nISBN to return: ");
+                String ri = scanner.nextLine().trim();
+
+                double outstanding = computeFine.computeOutstanding(userid, LocalDate.now());
+                boolean rb = returnBook.returnBook(ri, userid, LocalDate.now());
+
+                if (rb) {
+                    System.out.println("\nReturned successfully.");
+                } else {
+                    if (outstanding > 0) {
+                        System.out.println("\nCannot return this book before paying outstanding fines. Current fine: " + outstanding);
+                    } else {
+                        System.out.println("\nCannot return this book. Check that:");
+                        System.out.println(" - The ISBN is correct");
+                        System.out.println(" - The book is currently borrowed");
+                        System.out.println(" - The book is borrowed by this user ID");
+                    }
+                }
+
+                if (!continueOrExit()) return;
+                break;
+
+
+            case 7:
+                refresh();
+                List<Book> over = overdueBooks.getOverdueBooks(LocalDate.now());
+                if (over.isEmpty()) {
+                    System.out.println("\nNo overdue books.");
+                } else {
+                    printBooksTable(over, "OVERDUE BOOKS");
+                    Path path = Paths.get("DATA/OVERDUE.TXT");
+                    List<String> lines = new ArrayList<>();
+                    lines.add("| TYPE     | ISBN         | USER_ID      | DUE_DATE     |");
+                    for (Book b : over) {
+                        lines.add(String.format("| %-8s | %-12s | %-12s | %-12s |", "BORROW", b.getIsbn(),
+                                b.getBorrowerId(), b.getDueDate()));
+                    }
+                    try {
+                        Files.write(path, lines, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                        System.out.println("\nOverdue file updated: " + path.toAbsolutePath());
+                    } catch (Exception e) {
+                        System.out.println("\nError writing overdue file: " + e.getMessage());
+                    }
+                }
+                if (!continueOrExit())
                     return;
-                default:
-                    System.out.println("\nInvalid option!");
+                break;
+            case 8:
+                System.out.print("\nUser ID: ");
+                String su = scanner.nextLine().trim();
+                if (!isDigits(su)) {
+                    System.out.println("\nInvalid user id.");
+                    if (!continueOrExit())
+                        return;
+                    break;
+                }
+                double fine = computeFine.computeOutstanding(su, LocalDate.now());
+                System.out.println("\nOutstanding fine: " + fine);
+                if (!continueOrExit())
+                    return;
+                break;
+            case 9:
+                System.out.print("\nUser ID: ");
+                String pu = scanner.nextLine().trim();
+                System.out.print("Amount: ");
+                double amt = 0;
+                try {
+                    amt = Double.parseDouble(scanner.nextLine().trim());
+                } catch (Exception e) {
+                }
+                double remain = payFine.pay(pu, amt, LocalDate.now());
+                System.out.println("\nRemaining fine: " + remain);
+                if (!continueOrExit())
+                    return;
+                break;
+            case 10:
+                System.out.print("\nNew loan days: ");
+                int d = 28;
+                try {
+                    d = Integer.parseInt(scanner.nextLine().trim());
+                } catch (Exception e) {
+                }
+                settings.setLoanDays(d);
+                System.out.println("\nLoan days set to " + d + ".");
+                if (!continueOrExit())
+                    return;
+                break;
+            case 11:
+                System.out.print("\nUser ID: ");
+                String nid = scanner.nextLine().trim();
+                System.out.print("Name: ");
+                String nn = scanner.nextLine().trim();
+                System.out.print("Phone: ");
+                String np = scanner.nextLine().trim();
+                System.out.print("Email: ");
+                String ne = scanner.nextLine().trim();
+                users.addUser(nid, nn, np, ne);
+                System.out.println("\nUser created.");
+                if (!continueOrExit())
+                    return;
+                break;
+                
+            case 12:
+                if (!admin.isLoggedIn()) {
+                    System.out.println("\nAdmin must login first.");
                     if (!continueOrExit()) return;
+                    break;
+                }
+                System.out.print("\nUser ID: ");
+                String userid2 = scanner.nextLine().trim();
+                boolean ok2 = unregisterUser.execute(userid2, LocalDate.now());
+                if (ok2) System.out.println("\nUser unregistered.");
+                else System.out.println("\nCannot unregister this user.");
+                if (!continueOrExit()) return;
+                break;
+
+            case 13:
+                List<String> allUsers = users.getAllUsers();
+                if (allUsers.isEmpty())
+                    System.out.println("\nNo users found.");
+                else
+                    printUsersTable(allUsers, "ALL USERS");
+                if (!continueOrExit())
+                    return;
+                break;
+            case 14:
+                List<String> report = new ArrayList<String>();
+                report.add("LIBRARY REPORT " + nowStr());
+                report.add("Books: " + repo.getAll().size());
+                report.add("Users: " + users.getAllUsers().size());
+                Path rp = Paths.get("DATA/REPORTS.TXT");
+                try {
+                    Files.write(rp, report);
+                } catch (Exception e) {
+                }
+                System.out.println("\nReports written to: " + rp.toAbsolutePath());
+                if (!continueOrExit())
+                    return;
+                break;
+            case 15:
+                try {
+                    Files.deleteIfExists(Paths.get("DATA/BOOKS.TXT"));
+                    Files.deleteIfExists(Paths.get("DATA/BORROWS.TXT"));
+                    Files.deleteIfExists(Paths.get("DATA/PAYMENTS.TXT"));
+                    Files.deleteIfExists(Paths.get("DATA/USERS.TXT"));
+                    Files.deleteIfExists(Paths.get("DATA/SETTINGS.TXT"));
+                    Files.deleteIfExists(Paths.get("DATA/REPORTS.TXT"));
+                    Files.deleteIfExists(Paths.get("DATA/OVERDUE.TXT"));
+                } catch (Exception e) {
+                }
+                System.out.println("\nAll data files reset.");
+                if (!continueOrExit())
+                    return;
+                break;
+            case 16:
+                printBooksTable(repo.getAll(), "ALL BOOKS");
+                if (!continueOrExit())
+                    return;
+                break;
+            case 17:
+                int sent = sendReminders.sendAll(LocalDate.now());
+                if (sent == 0)
+                    System.out.println("\nNo overdue users. No reminders sent.");
+                else {
+                    for (String msg : sendReminders.getSentLogs())
+                        System.out.println(msg);
+                    System.out.println("\n" + sent + " reminders sent successfully.");
+                }
+                if (!continueOrExit())
+                    return;
+                break;
+            case 18:
+                System.out.println("\nExiting Library App. Goodbye!");
+                return;
+            default:
+                System.out.println("\nInvalid option!");
+                if (!continueOrExit())
+                    return;
             }
         }
     }
