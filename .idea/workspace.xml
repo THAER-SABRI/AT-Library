@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="6081e28a-4aef-4aba-af7d-759e4c9e2446" name="Changes" comment="" />
+    <list default="true" id="6081e28a-4aef-4aba-af7d-759e4c9e2446" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/library_system/application/BorrowMedia.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/library_system/application/BorrowMedia.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/library_system/application/SendReminders.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/library_system/application/SendReminders.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/library_system/infrastructure/persistence/FileCdRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/library_system/infrastructure/persistence/FileCdRepository.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -10,9 +19,9 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 7
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
   <component name="ProjectId" id="36i5TCqGsdjvm87AZEgz5vh9OEB" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -26,6 +35,10 @@
     "git-widget-placeholder": "AT",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -45,6 +58,8 @@
       <option name="presentableId" value="Default" />
       <updated>1765476558231</updated>
       <workItem from="1765476560491" duration="28000" />
+      <workItem from="1765485233247" duration="143000" />
+      <workItem from="1765486488284" duration="888000" />
     </task>
     <servers />
   </component>

@@ -95,11 +95,15 @@ public class FileCdRepository implements CdRepository {
 
         try {
             for (String raw : Files.readAllLines(path)) {
-                if (raw == null) continue;
-                String line = raw.trim();
-                if (line.isEmpty()) continue;
 
-                // Remove surrounding pipes if present
+
+                if (raw == null) {
+                    continue;
+                }
+                String line = raw.trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
                 if (line.startsWith("|")) line = line.substring(1);
                 if (line.endsWith("|")) line = line.substring(0, line.length() - 1);
 
@@ -111,6 +115,15 @@ public class FileCdRepository implements CdRepository {
                 // Skip header row
                 if ("ID".equalsIgnoreCase(parts[0])) continue;
 
+                if (parts.length < 5) {
+                    continue;
+                }
+                for (int i = 0; i < parts.length; i++) {
+                    parts[i] = parts[i].trim();
+                }
+                if ("ID".equalsIgnoreCase(parts[0])) {
+                    continue;
+                }
                 String id = parts[0];
                 String title = parts[1];
                 String status = parts[2];

@@ -169,12 +169,18 @@ public class SendReminders {
 
         try {
             for (String line : Files.readAllLines(p)) {
-                if (!line.startsWith("|") || line.startsWith("| ID")) continue;
-                String[] parts = line.split("\\|");
-                if (parts.length < 5) continue;
 
-                map.put(parts[1].trim(), parts[4].trim());
+                boolean validHeader = line.startsWith("|") && !line.startsWith("| ID");
+                if (validHeader) {
+
+                    String[] parts = line.split("\\|");
+
+                    if (parts.length >= 5) {
+                        map.put(parts[1].trim(), parts[4].trim());
+                    }
+                }
             }
+
         } catch (IOException ignored) {}
 
         return map;

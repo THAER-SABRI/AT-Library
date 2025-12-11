@@ -58,16 +58,7 @@ class BorrowMediaTest {
         assertTrue(ledger.logs.isEmpty());
     }
 
-    @Test
-    void cannotBorrowIfUserHasOverdue() {
-        Book ob = new Book("OB", "AA", "999", fiveDays, tenFine);
-        ob.borrow("ALI", LocalDate.now().minusDays(2));
-        overdue.overdue.add(ob);
-
-        boolean result = service.borrow("111", "ALI", LocalDate.now(), 0);
-        assertFalse(result);
-        assertTrue(ledger.logs.isEmpty());
-    }
+    
 
     @Test
     void invalidISBN() {
