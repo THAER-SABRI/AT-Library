@@ -6,8 +6,33 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Properties;
 
+/**
+ * Utility class for loading environment-style configuration files.
+ * <p>
+ * This class supports two different loading mechanisms:
+ * <ul>
+ *     <li>{@link #loadEnv(String)} – loads key/value pairs from a file on disk</li>
+ *     <li>{@link #load(String)} – loads key/value pairs from a classpath resource</li>
+ * </ul>
+ * <p>
+ * The expected format is simple <code>key=value</code> pairs,
+ * with optional comments beginning with {@code #}. Blank lines
+ * and malformed entries are ignored.
+ * </p>
+ */
 public class EnvConfigLoader {
 
+    /**
+     * Loads environment configuration from a file system path.
+     * <p>
+     * Each non-empty, non-comment line must contain exactly one {@code '='}
+     * separating the key and the value. Lines failing this format are skipped.
+     * </p>
+     *
+     * @param filePath the path to the configuration file on disk
+     * @return a {@link Properties} object containing all loaded key/value pairs;
+     *         never {@code null}
+     */
     public static Properties loadEnv(String filePath) {
         Properties props = new Properties();
 
@@ -27,6 +52,18 @@ public class EnvConfigLoader {
         return props;
     }
 
+    /**
+     * Loads configuration from a classpath resource.
+     * <p>
+     * This method is useful when configuration files are bundled inside the
+     * application's JAR or resource directory. The resource is loaded via the
+     * class loader; if not found, an empty {@link Properties} object is returned.
+     * </p>
+     *
+     * @param resourceName the name of the resource located in the classpath
+     * @return a {@link Properties} object containing loaded key/value pairs,
+     *         or an empty one if the resource cannot be found
+     */
     public static Properties load(String resourceName) {
         Properties props = new Properties();
 

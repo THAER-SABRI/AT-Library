@@ -1,0 +1,13 @@
+FakeImplementationForNeededInterfaces
+library_system.application
+library_system.application_test
+library_system.domain
+library_system.domain_test
+library_system.domain.events
+library_system.domain.events_test
+library_system.domain.strategy
+library_system.infrastructure.email
+library_system.infrastructure.email_test
+library_system.infrastructure.persistence
+library_system.infrastructure.persistence_test
+library_system.presentation
