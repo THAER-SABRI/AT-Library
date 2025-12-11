@@ -145,6 +145,7 @@ public class ConsoleApp {
             String st = cd.isBorrowed() ? "BORROWED" : "FREE";
             System.out.printf("║ %-20s │ %-12s │ %-13s ║%n",
                     cd.getTitle(), cd.getId(), st);
+            
         }
 
         System.out.println("╚════════════════════════════════════════════════════════════════════════════╝");
