@@ -1,11 +1,11 @@
 package library_system.application;
 
-import library_system.domain.Book;
-import library_system.domain.CD;
-import library_system.domain.events.*;
 import library_system.application.UserDirectory;
 import library_system.application.BookRepository;
 import library_system.application.CdRepository;
+import library_system.domain.Book;
+import library_system.domain.CD;
+import library_system.domain.events.*;
 
 import java.time.LocalDate;
 
@@ -33,7 +33,10 @@ public class EmailObserver implements Observer {
             BookBorrowedEvent e = (BookBorrowedEvent) event;
 
             Book book = findBook(e.getIsbn());
+            if (book == null) return;
+
             String address = users.getEmail(e.getUserId());
+            if (address == null || address.isEmpty()) return;
 
             String body =
                     "Dear User,\n\n" +
@@ -43,7 +46,7 @@ public class EmailObserver implements Observer {
                     "• ISBN: " + book.getIsbn() + "\n" +
                     "• Borrowed On: " + LocalDate.now() + "\n" +
                     "• Due Date: " + book.getDueDate() + "\n\n" +
-                    "Please make sure to return the book on or before the due date to avoid fines.\n\n" +
+                    "Please return the book on or before the due date to avoid fines.\n\n" +
                     "Library System\n";
 
             email.sendEmail(address, "Book Borrowed", body);
@@ -53,7 +56,10 @@ public class EmailObserver implements Observer {
             BookReturnedEvent e = (BookReturnedEvent) event;
 
             Book book = findBook(e.getIsbn());
+            if (book == null) return;
+
             String address = users.getEmail(e.getUserId());
+            if (address == null || address.isEmpty()) return;
 
             String body =
                     "Dear User,\n\n" +
