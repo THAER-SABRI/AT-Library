@@ -5,4 +5,4 @@
 | RETURN   | 1            | 1            |              |
 | RETURN   | 1            | 1            |              |
 | RETURN   | 1            | 1            |              |
-| BORROW   | 1            | 1            | 2026-01-08   |
+| RETURN   | 1            | 1            |              |
