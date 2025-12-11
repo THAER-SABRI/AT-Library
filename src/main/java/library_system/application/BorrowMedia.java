@@ -71,10 +71,11 @@ public class BorrowMedia {
     }
 
     public boolean borrow(String mediaId, String userId, LocalDate today, int mediaType) {
-        if (mediaId == null || userId == null || today == null) return false;
-        mediaId = mediaId.trim();
-        userId = userId.trim();
-        if (mediaId.isEmpty() || userId.isEmpty()) return false;
-        return false;
+        return !(mediaId == null ||
+                userId == null ||
+                today == null ||
+                mediaId.trim().isEmpty() ||
+                userId.trim().isEmpty());
     }
+
 }
