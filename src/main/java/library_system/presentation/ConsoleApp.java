@@ -147,7 +147,6 @@ public class ConsoleApp {
                     cd.getTitle(), cd.getId(), st);
             
         }
-
         System.out.println("╚════════════════════════════════════════════════════════════════════════════╝");
     }
 
