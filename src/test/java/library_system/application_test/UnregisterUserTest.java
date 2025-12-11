@@ -88,18 +88,41 @@ class UnregisterUserTest {
         assertEquals(1, users.getAllUsers().size());
     }
 
-
     static class FakeUsers implements UserDirectory {
         List<String> list = new ArrayList<>();
-        public List<String> getAllUsers() { return list; }
-        public void addUser(String id, String name, String phone, String email) { list.add(id); }
-        public boolean removeUser(String id) { return list.remove(id); }
-    }
 
+        @Override
+        public List<String> getAllUsers() {
+            return list;
+        }
+
+        @Override
+        public void addUser(String id, String name, String phone, String email) {
+            list.add(id);
+        }
+
+        @Override
+        public boolean removeUser(String id) {
+            return list.remove(id);
+        }
+
+        @Override
+        public String getEmail(String userId) {
+            return "fake@mail.com";  // test does NOT use email, so return anything
+        }
+    }
 
     static class FakeCds implements CdRepository {
         List<CD> list = new ArrayList<>();
-        public List<CD> getAll() { return list; }
-        public void saveAll(List<CD> cds) { list = cds; }
+
+        @Override
+        public List<CD> getAll() {
+            return list;
+        }
+
+        @Override
+        public void saveAll(List<CD> cds) {
+            list = cds;
+        }
     }
 }

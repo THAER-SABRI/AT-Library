@@ -11,27 +11,17 @@ import library_system.domain.Book;
 import library_system.domain.CD;
 import library_system.domain.Media;
 import library_system.application.*;
-import library_system.domain.strategy.BorrowDurationStrategy;
-import library_system.domain.strategy.CdBorrowDurationStrategy;
-import library_system.domain.strategy.CdFineStrategy;
-import library_system.domain.strategy.FineStrategy;
-import library_system.domain.strategy.BookBorrowDurationStrategy;
-import library_system.domain.strategy.BorrowDurationStrategy;
-import library_system.domain.strategy.BookFineStrategy;
-import library_system.domain.strategy.FineStrategy;
+import library_system.domain.strategy.*;
 import library_system.infrastructure.persistence.*;
 import library_system.infrastructure.email.EnvConfigLoader;
-import library_system.infrastructure.email.InMemoryEmailClient;
 import library_system.infrastructure.email.SMTPEmailService;
 
 public class ConsoleApp {
 
     private static Scanner scanner = new Scanner(System.in);
 
-    // Settings file
     private static FileSettingsGateway settings = new FileSettingsGateway("DATA/SETTINGS.TXT");
 
-    // Strategies
     private static BorrowDurationStrategy bookBorrowStrategy =
             new BookBorrowDurationStrategy(settings);
     private static FineStrategy bookFineStrategy = new BookFineStrategy();
@@ -40,7 +30,6 @@ public class ConsoleApp {
             new CdBorrowDurationStrategy(settings);
     private static FineStrategy cdFineStrategy = new CdFineStrategy();
 
-    // Repositories
     private static FileBookRepository bookRepo =
             new FileBookRepository("DATA/BOOKS.TXT");
 
@@ -51,42 +40,29 @@ public class ConsoleApp {
     private static FilePaymentLedger paymentLedger = new FilePaymentLedger();
     private static FileUserDirectory users = new FileUserDirectory();
 
-    // Application services
     private static OverdueMedia overdueMedia =
             new OverdueMedia(bookRepo, cdRepo);
 
+    private static EventDispatcher dispatcher = new EventDispatcher();
+
     private static BorrowMedia borrowMedia =
-            new BorrowMedia(bookRepo, cdRepo, borrowLedger, overdueMedia);
+            new BorrowMedia(bookRepo, cdRepo, borrowLedger, overdueMedia, dispatcher);
 
     private static ComputeFine computeFine =
             new ComputeFine(bookRepo, cdRepo, paymentLedger);
 
-    private static ReturnBook returnBook =
-            new ReturnBook(bookRepo, borrowLedger, computeFine);
+    private static ReturnMedia returnMedia =
+            new ReturnMedia(bookRepo, cdRepo, borrowLedger, computeFine, dispatcher);
+
 
     private static PayFine payFine =
             new PayFine(paymentLedger, computeFine);
-    
+
     private static SendReminders sendReminders;
 
-
-    Properties env = EnvConfigLoader.loadEnv("DATA/email.env");
-
-    EmailService emailService = new SMTPEmailService(
-            env.getProperty("EMAIL_USERNAME"),
-            env.getProperty("EMAIL_PASSWORD"),
-            env.getProperty("EMAIL_HOST"),
-            Integer.parseInt(env.getProperty("EMAIL_PORT")),
-            Boolean.parseBoolean(env.getProperty("EMAIL_TLS")));
-   
-    SendReminders sendRemainders= new SendReminders(emailService, computeFine);
-
-
-
     private static Admin admin = new Admin("THAER", "777");
-
-    private static UnregisterUser unregisterUser =
-            new UnregisterUser(users, bookRepo, computeFine, admin);
+    
+    private static UnregisterUser unregisterUser = new UnregisterUser(users, bookRepo, computeFine, admin);
 
     private static String nowStr() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
@@ -103,9 +79,7 @@ public class ConsoleApp {
         System.out.printf ("║ %-20s │ %-20s │ %-12s │ %-13s ║%n", "TITLE", "AUTHOR", "ISBN", "STATUS");
         System.out.println("╠════════════════════════════════════════════════════════════════════════════╣");
         for (Book b : books) {
-        	
-        	if (b.getTitle().trim().equals("TITLE")) continue;
-        	
+            if (b.getTitle().trim().equals("TITLE")) continue;
             String st = b.isBorrowed() ? "BORROWED" : "FREE";
             System.out.printf("║ %-20s │ %-20s │ %-12s │ %-13s ║%n",
                     b.getTitle(), b.getAuthor(), b.getIsbn(), st);
@@ -148,6 +122,7 @@ public class ConsoleApp {
     }
 
     public static void main(String[] args) {
+    	
 
         java.io.File dataDir = new java.io.File("DATA");
         if (!dataDir.exists())
@@ -162,6 +137,10 @@ public class ConsoleApp {
                 Integer.parseInt(env.getProperty("EMAIL_PORT")),
                 Boolean.parseBoolean(env.getProperty("EMAIL_TLS")));
 
+    	UserDirectory users = new FileUserDirectory("DATA/USERS.TXT");
+    	dispatcher.registerObserver(new EmailObserver(emailService, users, bookRepo, cdRepo));
+
+
         sendReminders = new SendReminders(emailService, computeFine);
 
         while (true) {
@@ -175,7 +154,7 @@ public class ConsoleApp {
             System.out.println("║  4. Add CD                                                         ║");
             System.out.println("║  5. Search Media                                                   ║");
             System.out.println("║  6. Borrow Media                                                   ║");
-            System.out.println("║  7. Return Book                                                    ║");
+            System.out.println("║  7. Return Media                                                   ║");
             System.out.println("║  8. List Overdue Media                                             ║");
             System.out.println("║  9. Show Outstanding Fine                                          ║");
             System.out.println("║ 10. Pay Fine                                                       ║");
@@ -337,6 +316,7 @@ public class ConsoleApp {
                     break;
 
                 case 6:
+                	
                     System.out.println("\nBorrow Media ");
                     System.out.println(" 1. Select User");
                     System.out.println(" 2. Create New User");
@@ -406,7 +386,7 @@ public class ConsoleApp {
                         break;
                     }
 
-                    boolean borrowed = borrowMedia.borrow(idInput, uid, LocalDate.now());
+                    boolean borrowed = borrowMedia.borrow(mediaOpt,idInput, uid, LocalDate.now());
                     System.out.println(borrowed ? "\nBorrowed successfully." : "\nCannot borrow this media item.");
                     if (!continueOrExit())
                         return;
@@ -419,31 +399,46 @@ public class ConsoleApp {
                         break;
                     }
 
+                    System.out.println("\nReturn:");
+                    System.out.println(" 1. Book (ISBN)");
+                    System.out.println(" 2. CD (ID)");
+                    System.out.print(" Choose [1-2]: ");
+
+                    int rOpt = 0;
+                    try {
+                        rOpt = Integer.parseInt(scanner.nextLine().trim());
+                    } catch (Exception e) {}
+
+                    if (rOpt != 1 && rOpt != 2) {
+                        System.out.println("\nInvalid option.");
+                        if (!continueOrExit()) return;
+                        break;
+                    }
+
                     System.out.print("\nUser ID: ");
-                    String userid = scanner.nextLine().trim();
+                    String rUser = scanner.nextLine().trim();
 
-                    System.out.print("\nISBN to return: ");
-                    String ri = scanner.nextLine().trim();
+                    System.out.print(rOpt == 1 ? "\nISBN: " : "\nCD ID: ");
+                    String rId = scanner.nextLine().trim();
 
-                    double outstanding = computeFine.computeOutstanding(userid, LocalDate.now());
-                    boolean rb = returnBook.returnBook(ri, userid, LocalDate.now());
+                    boolean returned = returnMedia.returnMedia(rOpt, rId, rUser, LocalDate.now());
+                    double out = computeFine.computeOutstanding(rUser, LocalDate.now());
 
-                    if (rb) {
+                    if (returned) {
                         System.out.println("\nReturned successfully.");
                     } else {
-                        if (outstanding > 0) {
-                            System.out.println("\nCannot return this book before paying outstanding fines. Current fine: " + outstanding);
+                        if (out > 0) {
+                            System.out.println("\nCannot return before paying outstanding fines. Current fine: " + out);
                         } else {
-                            System.out.println("\nCannot return this book. Check that:");
-                            System.out.println(" - The ISBN is correct");
-                            System.out.println(" - The book is currently borrowed");
-                            System.out.println(" - The book is borrowed by this user ID");
+                            System.out.println("\nReturn failed. Check that:");
+                            System.out.println(" - Media ID is correct");
+                            System.out.println(" - Media is currently borrowed");
+                            System.out.println(" - Media belongs to this user");
                         }
                     }
 
                     if (!continueOrExit()) return;
                     break;
-
                 case 8:
                     List<Media> overMedia = overdueMedia.getAllOverdues(LocalDate.now());
                     if (overMedia.isEmpty()) {

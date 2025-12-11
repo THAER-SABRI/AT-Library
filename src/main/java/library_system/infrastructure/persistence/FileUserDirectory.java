@@ -63,6 +63,22 @@ public class FileUserDirectory implements UserDirectory {
         return true;
     }
 
+    @Override
+    public String getEmail(String userId) {
+        List<String> lines = getAllUsers();
+        for (String line : lines) {
+            String[] p = line.split("\\|");
+            if (p.length >= 5) {
+                String id = p[1].trim();
+                String email = p[4].trim();
+                if (id.equals(userId)) {
+                    return email;
+                }
+            }
+        }
+        return null;
+    }
+
     public void deleteAll() {
         try {
             ensureParentDir();

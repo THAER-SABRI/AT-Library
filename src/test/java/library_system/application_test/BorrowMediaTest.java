@@ -17,6 +17,7 @@ class BorrowMediaTest {
     FakeCdRepo cdRepo;
     FakeBorrowLedger ledger;
     FakeOverdueMedia overdue;
+    FakeDispatcher dispatcher;
     BorrowMedia service;
 
     BorrowDurationStrategy fiveDays = new BookBorrowDurationStrategy(new FakeSettings());
@@ -28,8 +29,9 @@ class BorrowMediaTest {
         cdRepo = new FakeCdRepo();
         ledger = new FakeBorrowLedger();
         overdue = new FakeOverdueMedia();
+        dispatcher = new FakeDispatcher();
 
-        service = new BorrowMedia(bookRepo, cdRepo, ledger, overdue);
+        service = new BorrowMedia(bookRepo, cdRepo, ledger, overdue, dispatcher);
 
         bookRepo.books.add(new Book("B1", "A", "111", fiveDays, tenFine));
         bookRepo.books.add(new Book("B2", "A", "222", fiveDays, tenFine));
@@ -37,7 +39,7 @@ class BorrowMediaTest {
 
     @Test
     void borrowSuccess() {
-        boolean result = service.borrow("111", "ALI", LocalDate.now());
+        boolean result = service.borrow(1,"111", "ALI", LocalDate.now());
         assertTrue(result);
 
         assertTrue(
@@ -48,11 +50,10 @@ class BorrowMediaTest {
         assertEquals(1, ledger.logs.size());
     }
 
-
     @Test
     void cannotBorrowAlreadyBorrowed() {
         bookRepo.books.get(0).borrow("X", LocalDate.now().plusDays(3));
-        boolean result = service.borrow("111", "ALI", LocalDate.now());
+        boolean result = service.borrow(1,"111", "ALI", LocalDate.now());
         assertFalse(result);
         assertTrue(ledger.logs.isEmpty());
     }
@@ -63,30 +64,30 @@ class BorrowMediaTest {
         ob.borrow("ALI", LocalDate.now().minusDays(2));
         overdue.overdue.add(ob);
 
-        boolean result = service.borrow("111", "ALI", LocalDate.now());
+        boolean result = service.borrow("111", "ALI", LocalDate.now(), 0);
         assertFalse(result);
         assertTrue(ledger.logs.isEmpty());
     }
 
     @Test
     void invalidISBN() {
-        assertFalse(service.borrow(null, "ALI", LocalDate.now()));
-        assertFalse(service.borrow("", "ALI", LocalDate.now()));
-        assertFalse(service.borrow("   ", "ALI", LocalDate.now()));
+        assertFalse(service.borrow(null, "ALI", LocalDate.now(), 0));
+        assertFalse(service.borrow("", "ALI", LocalDate.now(), 0));
+        assertFalse(service.borrow("   ", "ALI", LocalDate.now(), 0));
         assertTrue(ledger.logs.isEmpty());
     }
 
     @Test
     void invalidUser() {
-        assertFalse(service.borrow("111", null, LocalDate.now()));
-        assertFalse(service.borrow("111", "", LocalDate.now()));
-        assertFalse(service.borrow("111", "   ", LocalDate.now()));
+        assertFalse(service.borrow("111", null, LocalDate.now(), 0));
+        assertFalse(service.borrow("111", "", LocalDate.now(), 0));
+        assertFalse(service.borrow("111", "   ", LocalDate.now(), 0));
         assertTrue(ledger.logs.isEmpty());
     }
 
     @Test
     void invalidDate() {
-        assertFalse(service.borrow("111", "ALI", null));
+        assertFalse(service.borrow("111", "ALI", null, 0));
         assertTrue(ledger.logs.isEmpty());
     }
 }

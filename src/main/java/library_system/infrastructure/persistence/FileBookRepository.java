@@ -27,13 +27,8 @@ public class FileBookRepository implements BookRepository {
 
         if (!Files.exists(path)) return result;
 
-        BorrowDurationStrategy borrow = () -> 28;
-        FineStrategy fine = () -> 1;
-
         try {
-            List<String> lines = Files.readAllLines(path);
-            for (String line : lines) {
-
+            for (String line : Files.readAllLines(path)) {
                 if (!line.startsWith("|")) continue;
                 if (line.contains("ISBN") && line.contains("TITLE")) continue;
 
@@ -47,13 +42,13 @@ public class FileBookRepository implements BookRepository {
                 String user = p[5].trim();
                 String due = p[6].trim();
 
-                Book b = new Book(isbn, title, author, borrow, fine, true);
+                Book b = new Book(isbn, title, author, defaultBorrow, defaultFine, true);
 
                 if (status.equalsIgnoreCase("BORROWED")) {
                     LocalDate d = null;
                     try { d = LocalDate.parse(due); } catch (Exception ignored) {}
                     b.setBorrowed(true);
-                    b.setBorrowerId(user);
+                    b.setBorrowerId(user.isEmpty() ? null : user);
                     b.setDueDate(d);
                 }
 

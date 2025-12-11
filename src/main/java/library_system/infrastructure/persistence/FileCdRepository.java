@@ -21,7 +21,6 @@ public class FileCdRepository implements CdRepository {
     public FileCdRepository(String file,
                             BorrowDurationStrategy borrowStrategy,
                             FineStrategy fineStrategy) {
-
         this.file = file;
         this.borrowStrategy = borrowStrategy;
         this.fineStrategy = fineStrategy;
@@ -29,7 +28,6 @@ public class FileCdRepository implements CdRepository {
 
     public FileCdRepository(BorrowDurationStrategy borrowStrategy,
                             FineStrategy fineStrategy) {
-
         this("DATA/CDS.TXT", borrowStrategy, fineStrategy);
     }
 
@@ -37,39 +35,42 @@ public class FileCdRepository implements CdRepository {
     public List<CD> getAll() {
         ensureParentDir();
         List<CD> list = new ArrayList<>();
-
         Path path = Paths.get(file);
         if (!Files.exists(path)) return list;
 
         try {
-            for (String line : Files.readAllLines(path)) {
+            for (String raw : Files.readAllLines(path)) {
+                if (raw == null) continue;
+                String line = raw.trim();
+                if (line.isEmpty()) continue;
 
-                if (!line.startsWith("|") || !line.endsWith("|")) continue;
+                if (line.startsWith("|")) line = line.substring(1);
+                if (line.endsWith("|")) line = line.substring(0, line.length() - 1);
 
                 String[] parts = line.split("\\|");
-                if (parts.length < 6) continue;
+                if (parts.length < 5) continue;
 
-                String col0 = parts[1].trim();
-                if ("ID".equalsIgnoreCase(col0)) continue;
+                for (int i = 0; i < parts.length; i++) parts[i] = parts[i].trim();
+                if ("ID".equalsIgnoreCase(parts[0])) continue;
 
-                String id = col0;
-                String title = parts[2].trim();
-                String status = parts[3].trim();
-                String user = parts[4].trim();
-                String due = parts[5].trim();
+                String id = parts[0];
+                String title = parts[1];
+                String status = parts[2];
+                String user = parts[3];
+                String due = parts[4];
 
                 CD cd = new CD(id, title, borrowStrategy, fineStrategy);
 
                 if ("BORROWED".equalsIgnoreCase(status)) {
-                    LocalDate d = ("null".equalsIgnoreCase(due) || due.isBlank())
-                            ? null
-                            : LocalDate.parse(due);
+                    LocalDate d =
+                            ("null".equalsIgnoreCase(due) || due.isBlank())
+                                    ? null
+                                    : LocalDate.parse(due);
                     cd.borrow(user.equals("null") ? null : user, d);
                 }
 
                 list.add(cd);
             }
-
         } catch (IOException ignored) {}
 
         return list;
@@ -96,7 +97,6 @@ public class FileCdRepository implements CdRepository {
                 w.write(row(cd.getId(), cd.getTitle(), status, user, due));
                 w.newLine();
             }
-
         } catch (IOException ignored) {}
     }
 

@@ -1,4 +1,7 @@
 | TYPE     | ISBN         | USER_ID      | DUE_DATE     |
 | RETURN   | 1            | 1            |              |
 | RETURN   | 1            | 1            |              |
-| BORROW   | 1            | 1            | 2023-11-04   |
+| RETURN   | 1            | 1            |              |
+| RETURN   | 1            | 1            |              |
+| RETURN   | 1            | 1            |              |
+| BORROW   | 1            | 1            | 2026-01-08   |

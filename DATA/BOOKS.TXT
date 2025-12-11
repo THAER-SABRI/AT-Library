@@ -1,2 +1,2 @@
 | ISBN | TITLE | AUTHOR | STATUS | USER_ID | DUE_DATE |
-| 1 | Twilight | Ali | FREE |  |  |
+| 1 | Twilight | Ali | BORROWED | 1 | 2026-01-08 |
