@@ -157,6 +157,7 @@ public class ConsoleApp {
      * @param title     title to display above the table
      */
     private static void printUsersTable(List<String> usersList, String title) {
+   
     	
         // unchanged logic
         System.out.println("\n╔════════════════════════════════════════════════════════════════════════════╗");
