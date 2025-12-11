@@ -1,2 +1,0 @@
-| ID           | NAME                   | PHONE            | EMAIL                        |
-| 1            | Omar                   | 0599109144       | alimajdi2022@gmail.com       |

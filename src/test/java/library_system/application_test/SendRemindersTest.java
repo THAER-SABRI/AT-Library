@@ -3,8 +3,10 @@ package library_system.application_test;
 import library_system.application.SendReminders;
 import library_system.application.ComputeFine;
 import library_system.application.EmailService;
-import FakeImplementationForNeededInterfaces.FakeBookRepo;
-import FakeImplementationForNeededInterfaces.FakePaymentLedger;
+
+import FakeImplementationForNeededInterfaces.*;
+import library_system.domain.Book;
+
 import org.junit.jupiter.api.*;
 import org.mockito.Mockito;
 
@@ -20,6 +22,7 @@ class SendRemindersTest {
     private ComputeFine computeFine;
     private SendReminders service;
     private FakeBookRepo repo;
+    private FakeCdRepo cdRepo;
 
     @BeforeEach
     void setup() throws Exception {
@@ -40,12 +43,15 @@ class SendRemindersTest {
         Files.write(Paths.get("DATA/REMINDERS.TXT"), new byte[0]);
 
         repo = new FakeBookRepo();
-        library_system.domain.Book b = new library_system.domain.Book("B1", "A", "111");
+        cdRepo = new FakeCdRepo();
+
+        Book b = new Book("B1", "A", "111");
         b.borrow("U1", LocalDate.now().minusDays(2));
         repo.books.add(b);
 
         FakePaymentLedger payment = new FakePaymentLedger();
-        computeFine = new ComputeFine(repo, payment);
+
+        computeFine = new ComputeFine(repo, cdRepo, payment);
 
         email = Mockito.mock(EmailService.class);
 

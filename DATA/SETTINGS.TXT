@@ -1,1 +1,2 @@
 loanDays=28
+cdLoanDays=7

@@ -1,3 +1,2 @@
 | ISBN | TITLE | AUTHOR | STATUS | USER_ID | DUE_DATE |
-| 1 | Twilight | Ali | BORROWED | 1 | 2023-11-04 |
-| 2 | Harry Potter | Ali | FREE | null | null |
+| 1 | Twilight | Ali | FREE |  |  |

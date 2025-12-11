@@ -5,13 +5,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import library_system.application.ComputeFine;
+import library_system.application.BookRepository;
+import library_system.application.CdRepository;
+import library_system.application.PaymentLedger;
 
 public class FakeComputeFine extends ComputeFine {
 
     private Map<String, Double> map = new HashMap<>();
 
     public FakeComputeFine() {
-        super(null, null);
+        super(new FakeBookRepo(), new FakeCdRepo(), new FakePaymentLedger());
     }
 
     public void setFine(String userId, double fine) {

@@ -9,29 +9,33 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import FakeImplementationForNeededInterfaces.FakeBookRepo;
 import FakeImplementationForNeededInterfaces.FakePaymentLedger;
 import library_system.application.*;
 import library_system.domain.Admin;
 import library_system.domain.Book;
+import library_system.domain.CD;
 
 class UnregisterUserTest {
 
     private UserDirectory users;
-    private BookRepository repo;
+    private BookRepository bookRepo;
+    private CdRepository cdRepo;
     private ComputeFine compute;
     private Admin admin;
     private UnregisterUser unregister;
 
     @BeforeEach
     void setup() {
-        this.users = new FakeUsers();
-        this.repo = new FakeBooks();
+        users = new FakeUsers();
+        bookRepo = new FakeBookRepo();
+        cdRepo = new FakeCds();
 
         FakePaymentLedger payment = new FakePaymentLedger();
-        this.compute = new ComputeFine(repo, payment);
+        compute = new ComputeFine(bookRepo, cdRepo, payment);
 
-        this.admin = new Admin("THAER", "777");
-        this.unregister = new UnregisterUser(users, repo, compute, admin);
+        admin = new Admin("THAER", "777");
+        unregister = new UnregisterUser(users, bookRepo, compute, admin);
 
         users.addUser("u1", "Name", "123", "mail");
     }
@@ -55,12 +59,12 @@ class UnregisterUserTest {
     void cannotUnregisterIfHasLoans() {
         admin.login("THAER", "777");
 
-        List<Book> list = repo.getAll();
-        Book b = new Book("T", "A", "100");
+        List<Book> list = bookRepo.getAll();
+        Book b = new Book("T", "A", "100", null, null);
         b.setBorrowed(true);
         b.setBorrowerId("u1");
         list.add(b);
-        repo.saveAll(list);
+        bookRepo.saveAll(list);
 
         boolean result = unregister.execute("u1", LocalDate.now());
         assertFalse(result);
@@ -71,13 +75,13 @@ class UnregisterUserTest {
     void cannotUnregisterIfHasFines() {
         admin.login("THAER", "777");
 
-        List<Book> list = repo.getAll();
-        Book b = new Book("T", "A", "100");
+        List<Book> list = bookRepo.getAll();
+        Book b = new Book("T", "A", "100", null, null);
         b.setBorrowed(true);
         b.setBorrowerId("u1");
         b.setDueDate(LocalDate.now().minusDays(5));
         list.add(b);
-        repo.saveAll(list);
+        bookRepo.saveAll(list);
 
         boolean result = unregister.execute("u1", LocalDate.now());
         assertFalse(result);
@@ -85,37 +89,17 @@ class UnregisterUserTest {
     }
 
 
-
     static class FakeUsers implements UserDirectory {
         List<String> list = new ArrayList<>();
-
-        @Override
-        public List<String> getAllUsers() {
-            return list;
-        }
-
-        @Override
-        public void addUser(String id, String name, String phone, String email) {
-            list.add(id);
-        }
-
-        @Override
-        public boolean removeUser(String id) {
-            return list.remove(id);
-        }
+        public List<String> getAllUsers() { return list; }
+        public void addUser(String id, String name, String phone, String email) { list.add(id); }
+        public boolean removeUser(String id) { return list.remove(id); }
     }
 
-    static class FakeBooks implements BookRepository {
-        List<Book> list = new ArrayList<>();
 
-        @Override
-        public List<Book> getAll() {
-            return list;
-        }
-
-        @Override
-        public void saveAll(List<Book> books) {
-            this.list = books;
-        }
+    static class FakeCds implements CdRepository {
+        List<CD> list = new ArrayList<>();
+        public List<CD> getAll() { return list; }
+        public void saveAll(List<CD> cds) { list = cds; }
     }
 }

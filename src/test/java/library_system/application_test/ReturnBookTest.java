@@ -22,8 +22,11 @@ class ReturnBookTest {
     void setup() {
         repo = new FakeBookRepo();
         ledger = new FakeBorrowLedger();
+
         FakePaymentLedger payment = new FakePaymentLedger();
-        compute = new ComputeFine(repo, payment);
+        FakeCdRepo cdRepo = new FakeCdRepo();
+
+        compute = new ComputeFine(repo, cdRepo, payment);
         service = new ReturnBook(repo, ledger, compute);
 
         Book b = new Book("Book1", "Author", "111");
@@ -32,6 +35,7 @@ class ReturnBookTest {
         b.setDueDate(LocalDate.now().plusDays(5));
         repo.books.add(b);
     }
+
 
     @Test
     void returnBookSuccessfully() {

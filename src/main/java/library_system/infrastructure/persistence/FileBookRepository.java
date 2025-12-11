@@ -2,8 +2,9 @@ package library_system.infrastructure.persistence;
 
 import library_system.application.BookRepository;
 import library_system.domain.Book;
+import library_system.domain.strategy.BorrowDurationStrategy;
+import library_system.domain.strategy.FineStrategy;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.*;
 import java.time.LocalDate;
@@ -12,10 +13,8 @@ import java.util.*;
 public class FileBookRepository implements BookRepository {
 
     private final String file;
-
-    public FileBookRepository() {
-        this("DATA/BOOKS.TXT");
-    }
+    private final BorrowDurationStrategy defaultBorrow = () -> 28;
+    private final FineStrategy defaultFine = () -> 1;
 
     public FileBookRepository(String file) {
         this.file = file;
@@ -23,66 +22,74 @@ public class FileBookRepository implements BookRepository {
 
     @Override
     public List<Book> getAll() {
-        ensureParentDir();
-        List<Book> list = new ArrayList<>();
-
+        List<Book> result = new ArrayList<>();
         Path path = Paths.get(file);
-        if (!Files.exists(path)) return list;
+
+        if (!Files.exists(path)) return result;
+
+        BorrowDurationStrategy borrow = () -> 28;
+        FineStrategy fine = () -> 1;
 
         try {
-            for (String line : Files.readAllLines(path)) {
-                if (!line.startsWith("|") || !line.endsWith("|")) continue;
+            List<String> lines = Files.readAllLines(path);
+            for (String line : lines) {
 
-                String[] parts = line.split("\\|");
-                if (parts.length < 7) continue;
+                if (!line.startsWith("|")) continue;
+                if (line.contains("ISBN") && line.contains("TITLE")) continue;
 
-                String col0 = parts[1].trim();
-                if ("ISBN".equalsIgnoreCase(col0)) continue; // header
+                String[] p = line.split("\\|");
+                if (p.length < 7) continue;
 
-                String isbn   = col0;
-                String title  = parts[2].trim();
-                String author = parts[3].trim();
-                String status = parts[4].trim();
-                String user   = parts[5].trim();
-                String due    = parts[6].trim();
+                String isbn = p[1].trim();
+                String title = p[2].trim();
+                String author = p[3].trim();
+                String status = p[4].trim();
+                String user = p[5].trim();
+                String due = p[6].trim();
 
-                Book b = new Book(isbn, title, author, true);
+                Book b = new Book(isbn, title, author, borrow, fine, true);
 
-                if ("BORROWED".equalsIgnoreCase(status)) {
-                    LocalDate d = ("null".equalsIgnoreCase(due) || due.isBlank())
-                            ? null
-                            : LocalDate.parse(due);
+                if (status.equalsIgnoreCase("BORROWED")) {
+                    LocalDate d = null;
+                    try { d = LocalDate.parse(due); } catch (Exception ignored) {}
                     b.setBorrowed(true);
-                    b.setBorrowerId(user.isBlank() ? null : user);
+                    b.setBorrowerId(user);
                     b.setDueDate(d);
                 }
 
-                list.add(b);
+                result.add(b);
             }
-        } catch (IOException ignored) {}
+        } catch (Exception ignored) {}
 
-        return list;
+        return result;
     }
 
     @Override
     public void saveAll(List<Book> books) {
-        ensureParentDir();
         Path path = Paths.get(file);
-        try (BufferedWriter w = Files.newBufferedWriter(path,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING)) {
+        try {
+            Files.createDirectories(path.getParent());
+        } catch (Exception ignored) {}
 
-            w.write(row("ISBN", "TITLE", "AUTHOR", "STATUS", "USER_ID", "DUE_DATE"));
-            w.newLine();
+        List<String> out = new ArrayList<>();
+        out.add("| ISBN | TITLE | AUTHOR | STATUS | USER_ID | DUE_DATE |");
 
-            for (Book b : books) {
-                String status = b.isBorrowed() ? "BORROWED" : "FREE";
-                String user = b.getBorrowerId() == null ? "null" : b.getBorrowerId();
-                String due = b.getDueDate() == null ? "null" : b.getDueDate().toString();
+        for (Book b : books) {
+            String status = b.isBorrowed() ? "BORROWED" : "FREE";
+            String user = b.getBorrowerId() == null ? "" : b.getBorrowerId();
+            String due = b.getDueDate() == null ? "" : b.getDueDate().toString();
 
-                w.write(row(b.getIsbn(), b.getTitle(), b.getAuthor(), status, user, due));
-                w.newLine();
-            }
+            out.add("| " + b.getIsbn() +
+                    " | " + b.getTitle() +
+                    " | " + b.getAuthor() +
+                    " | " + status +
+                    " | " + user +
+                    " | " + due +
+                    " |");
+        }
+
+        try {
+            Files.write(path, out);
         } catch (IOException ignored) {}
     }
 
@@ -94,7 +101,7 @@ public class FileBookRepository implements BookRepository {
 
     public void updateBook(Book updated) {
         List<Book> list = getAll();
-        list.removeIf(b -> b.getIsbn().equals(updated.getIsbn()));
+        list.removeIf(x -> x.getIsbn().equals(updated.getIsbn()));
         list.add(updated);
         saveAll(list);
     }
@@ -108,19 +115,5 @@ public class FileBookRepository implements BookRepository {
     public void reloadFromFile(List<Book> target) {
         target.clear();
         target.addAll(getAll());
-    }
-
-    private String row(String... cols) {
-        return "| " + String.join(" | ", cols) + " |";
-    }
-
-    private void ensureParentDir() {
-        try {
-            Path p = Paths.get(file);
-            Path parent = p.getParent();
-            if (parent != null && !Files.exists(parent)) {
-                Files.createDirectories(parent);
-            }
-        } catch (IOException ignored) {}
     }
 }

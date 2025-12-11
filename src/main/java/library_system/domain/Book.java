@@ -2,40 +2,50 @@ package library_system.domain;
 
 import java.time.LocalDate;
 
-public class Book {
+import library_system.domain.strategy.BorrowDurationStrategy;
+import library_system.domain.strategy.FineStrategy;
 
-    private String isbn;
-    private String title;
+public class Book extends Media {
+
     private String author;
-    private boolean borrowed;
-    private String borrowerId;
-    private LocalDate dueDate;
+    private BorrowDurationStrategy borrowStrategy;
+    private FineStrategy fineStrategy;
 
-    public Book(String isbn, String title, String author, boolean dummy) {
-        if (isbn == null || isbn.trim().isEmpty()) {
-            throw new IllegalArgumentException("isbn cannot be blank");
-        }
-        this.isbn = isbn.trim();
-        this.title = title;
+    public Book(String isbn, String title, String author,
+                BorrowDurationStrategy borrowStrategy,
+                FineStrategy fineStrategy, boolean dummy) {
+        super(isbn.trim(), title);
         this.author = author;
+        this.borrowStrategy = borrowStrategy;
+        this.fineStrategy = fineStrategy;
         this.borrowed = false;
         this.borrowerId = null;
         this.dueDate = null;
     }
 
     public Book(String title, String author, String isbn) {
-        if (isbn == null || isbn.trim().isEmpty()) {
-            throw new IllegalArgumentException("isbn cannot be blank");
-        }
-        this.isbn = isbn.trim();
-        this.title = title;
+        super(isbn.trim(), title);
         this.author = author;
+        this.borrowStrategy = () -> 28;
+        this.fineStrategy = () -> 1;
         this.borrowed = false;
         this.borrowerId = null;
         this.dueDate = null;
     }
 
-    public String getIsbn()       { return isbn; }
+    public Book(String title, String author, String isbn,
+                BorrowDurationStrategy borrowStrategy,
+                FineStrategy fineStrategy) {
+        super(isbn.trim(), title);
+        this.author = author;
+        this.borrowStrategy = borrowStrategy;
+        this.fineStrategy = fineStrategy;
+        this.borrowed = false;
+        this.borrowerId = null;
+        this.dueDate = null;
+    }
+
+    public String getIsbn()       { return id; }
     public String getTitle()      { return title; }
     public String getAuthor()     { return author; }
     public boolean isBorrowed()   { return borrowed; }
@@ -55,6 +65,9 @@ public class Book {
     }
 
     public void borrow(String userId, LocalDate dueDate) {
+        if (borrowed) return;
+        if (userId == null || userId.trim().isEmpty()) return;
+        if (dueDate == null) return;
         this.borrowed = true;
         this.borrowerId = userId;
         this.dueDate = dueDate;
@@ -64,5 +77,15 @@ public class Book {
         this.borrowed = false;
         this.borrowerId = null;
         this.dueDate = null;
+    }
+
+    @Override
+    public int getBorrowDays() {
+        return borrowStrategy.getBorrowDays();
+    }
+
+    @Override
+    public int getDailyFine() {
+        return fineStrategy.getDailyFine();
     }
 }

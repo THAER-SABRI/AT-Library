@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import FakeImplementationForNeededInterfaces.FakeBookRepo;
 import FakeImplementationForNeededInterfaces.FakePaymentLedger;
+import FakeImplementationForNeededInterfaces.FakeCdRepo;
 
 import java.time.LocalDate;
 
@@ -15,18 +16,21 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PayFineTest {
 
-    private FakePaymentLedger ledger;
-    private FakeBookRepo repo;
-    private ComputeFine computeFine;
-    private PayFine service;
+	private FakeCdRepo cdRepo;
+	private FakePaymentLedger ledger;
+	private FakeBookRepo repo;
+	private ComputeFine computeFine;
+	private PayFine service;
 
-    @BeforeEach
-    void setup() {
-        ledger = new FakePaymentLedger();
-        repo = new FakeBookRepo();
-        computeFine = new ComputeFine(repo, ledger);
-        service = new PayFine(ledger, computeFine);
-    }
+	@BeforeEach
+	void setup() {
+	    ledger = new FakePaymentLedger();
+	    repo = new FakeBookRepo();
+	    cdRepo = new FakeCdRepo();
+	    computeFine = new ComputeFine(repo, cdRepo, ledger);
+	    service = new PayFine(ledger, computeFine);
+	}
+
 
     @Test
     void payFullFine() {
@@ -34,7 +38,7 @@ class PayFineTest {
         b.borrow("ALI", LocalDate.now().minusDays(4));
         repo.books.add(b);
 
-        double remaining = service.pay("ALI", 4 * 0.5, LocalDate.now());
+        double remaining = service.pay("ALI", 4 * b.getDailyFine(), LocalDate.now());
 
         assertEquals(0.0, remaining);
         assertEquals(1, ledger.logs.size());
@@ -48,7 +52,7 @@ class PayFineTest {
 
         double remaining = service.pay("ALI", 2.0, LocalDate.now());
 
-        assertEquals(6 * 0.5 - 2.0, remaining);
+        assertEquals(6 * b.getDailyFine() - 2.0, remaining);
         assertEquals(1, ledger.logs.size());
     }
 
@@ -60,7 +64,7 @@ class PayFineTest {
 
         double remaining = service.pay("ALI", 0.0, LocalDate.now());
 
-        assertEquals(3 * 0.5, remaining);
+        assertEquals(3 * b.getDailyFine(), remaining);
         assertEquals(0, ledger.logs.size());
     }
 

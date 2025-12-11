@@ -3,6 +3,7 @@ package library_system.application_test;
 import FakeImplementationForNeededInterfaces.*;
 import library_system.application.*;
 import library_system.domain.Book;
+import library_system.domain.strategy.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -10,39 +11,47 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class BorrowBookTest {
+class BorrowMediaTest {
 
-    FakeBookRepo repo;
+    FakeBookRepo bookRepo;
+    FakeCdRepo cdRepo;
     FakeBorrowLedger ledger;
-    FakeSettings settings;
-    FakeOverdueBooks overdue;
-    BorrowBook service;
+    FakeOverdueMedia overdue;
+    BorrowMedia service;
+
+    BorrowDurationStrategy fiveDays = new BookBorrowDurationStrategy(new FakeSettings());
+    FineStrategy tenFine = new BookFineStrategy();
 
     @BeforeEach
     void setup() {
-        repo = new FakeBookRepo();
+        bookRepo = new FakeBookRepo();
+        cdRepo = new FakeCdRepo();
         ledger = new FakeBorrowLedger();
-        settings = new FakeSettings();
-        settings.loanDays = 5;
-        overdue = new FakeOverdueBooks();
+        overdue = new FakeOverdueMedia();
 
-        service = new BorrowBook(repo, ledger, settings, overdue);
+        service = new BorrowMedia(bookRepo, cdRepo, ledger, overdue);
 
-        repo.books.add(new Book("B1", "A", "111"));
-        repo.books.add(new Book("B2", "A", "222"));
+        bookRepo.books.add(new Book("B1", "A", "111", fiveDays, tenFine));
+        bookRepo.books.add(new Book("B2", "A", "222", fiveDays, tenFine));
     }
 
     @Test
     void borrowSuccess() {
         boolean result = service.borrow("111", "ALI", LocalDate.now());
         assertTrue(result);
-        assertTrue(repo.books.get(0).isBorrowed());
+
+        assertTrue(
+            bookRepo.books.stream()
+                .anyMatch(b -> b.getIsbn().equals("111") && b.isBorrowed())
+        );
+
         assertEquals(1, ledger.logs.size());
     }
 
+
     @Test
     void cannotBorrowAlreadyBorrowed() {
-        repo.books.get(0).borrow("X", LocalDate.now().plusDays(3));
+        bookRepo.books.get(0).borrow("X", LocalDate.now().plusDays(3));
         boolean result = service.borrow("111", "ALI", LocalDate.now());
         assertFalse(result);
         assertTrue(ledger.logs.isEmpty());
@@ -50,9 +59,9 @@ class BorrowBookTest {
 
     @Test
     void cannotBorrowIfUserHasOverdue() {
-        Book overdueBook = new Book("OB", "AA", "999");
-        overdueBook.borrow("ALI", LocalDate.now().minusDays(2));
-        overdue.overdue.add(overdueBook);
+        Book ob = new Book("OB", "AA", "999", fiveDays, tenFine);
+        ob.borrow("ALI", LocalDate.now().minusDays(2));
+        overdue.overdue.add(ob);
 
         boolean result = service.borrow("111", "ALI", LocalDate.now());
         assertFalse(result);

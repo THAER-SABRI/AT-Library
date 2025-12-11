@@ -5,7 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
-import java.io.IOException;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Properties;
 
@@ -17,31 +18,28 @@ class EnvConfigLoaderTest {
     File tempDir;
 
     @Test
-    void loadsValidEnvLines() throws IOException {
-
+    void loadEnv_readsValidKeyValues() throws Exception {
         File envFile = new File(tempDir, "test.env");
         Files.write(envFile.toPath(), java.util.Arrays.asList(
-                "# Comment",
-                "",
-                "EMAIL_HOST = smtp.test.com",
-                "PORT=587",
+                "# comment",
+                "HOST = smtp.example.com",
+                "PORT= 587",
                 " USER = admin "
         ));
 
         Properties p = EnvConfigLoader.loadEnv(envFile.getAbsolutePath());
 
-        assertEquals("smtp.test.com", p.getProperty("EMAIL_HOST"));
+        assertEquals("smtp.example.com", p.getProperty("HOST"));
         assertEquals("587", p.getProperty("PORT"));
         assertEquals("admin", p.getProperty("USER"));
     }
 
     @Test
-    void ignoresLinesWithoutEquals() throws IOException {
-
+    void loadEnv_ignoresInvalidLines() throws Exception {
         File envFile = new File(tempDir, "test.env");
         Files.write(envFile.toPath(), java.util.Arrays.asList(
-                "INVALIDLINE",
-                "ANOTHER-BAD-LINE",
+                "BADLINE",
+                "NO_EQUALS",
                 "KEY=VALUE"
         ));
 
@@ -52,11 +50,33 @@ class EnvConfigLoaderTest {
     }
 
     @Test
-    void returnsEmptyPropertiesWhenFileMissing() {
-
-        Properties p = EnvConfigLoader.loadEnv("email.env");
-
-        // loader suppresses exceptions, so we just get an empty Properties
+    void loadEnv_missingFile_returnsEmpty() {
+        Properties p = EnvConfigLoader.loadEnv("missing-file.env");
         assertTrue(p.isEmpty());
     }
+
+    @Test
+    void load_missingResource_returnsEmpty() {
+        Properties p = EnvConfigLoader.load("no-such-resource.env");
+        assertTrue(p.isEmpty());
+    }
+    @Test
+    void loadEnv_exceptionBranchCovered() {
+    	
+    	
+        Properties p = EnvConfigLoader.loadEnv(tempDir.getAbsolutePath());
+        assertTrue(p.isEmpty());
+    }
+
+    @Test
+    void load_exceptionBranchCovered() {
+        Properties p = EnvConfigLoader.load(null);
+        assertTrue(p.isEmpty());
+    }
+
+    @Test
+    void constructor_covered() {
+        new EnvConfigLoader();
+    }
+
 }

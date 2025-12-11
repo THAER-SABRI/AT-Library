@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import library_system.domain.Admin;
 import library_system.domain.Book;
+import library_system.infrastructure.persistence.FileBookRepository;
 
 public class UnregisterUser {
 
@@ -12,12 +13,12 @@ public class UnregisterUser {
     private final ComputeFine computeFine;
     private final Admin admin;
 
-    public UnregisterUser(UserDirectory users, BookRepository repo,
+    public UnregisterUser(UserDirectory users, BookRepository bookRepo,
                           ComputeFine computeFine, Admin admin) {
-        if (users == null || repo == null || computeFine == null || admin == null)
+        if (users == null || bookRepo == null || computeFine == null || admin == null)
             throw new IllegalArgumentException("dependencies cannot be null");
         this.users = users;
-        this.repo = repo;
+        this.repo = bookRepo;
         this.computeFine = computeFine;
         this.admin = admin;
     }

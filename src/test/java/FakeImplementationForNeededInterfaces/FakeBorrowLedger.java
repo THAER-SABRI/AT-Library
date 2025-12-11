@@ -11,13 +11,13 @@ public class FakeBorrowLedger implements BorrowLedger {
     public List<String> logs = new ArrayList<>();
 
     @Override
-    public void recordBorrow(String isbn, String userId, LocalDate dueDate) {
-        logs.add("BORROW|" + isbn + "|" + userId + "|" + dueDate);
+    public void recordBorrow(String id, String userId, LocalDate dueDate) {
+        logs.add("BORROW|" + id + "|" + userId + "|" + dueDate);
     }
 
     @Override
-    public void recordReturn(String isbn, String userId) {
-        logs.add("RETURN|" + isbn + "|" + userId);
+    public void recordReturn(String id, String userId) {
+        logs.add("RETURN|" + id + "|" + userId);
     }
 
     @Override
